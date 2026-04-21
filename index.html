@@ -109,6 +109,38 @@
   .poi-row .delete-btn:hover { background: #f6d9d9; border-color: #d59898; }
   #poi-list .empty-note { font-size: 11px; color: #8a857a; padding: 6px 2px; }
 
+  /* ---------- NATO unit symbols ---------- */
+  .unit { cursor: pointer; }
+  .unit .unit-frame { stroke-width: 0.8; stroke-linejoin: round; }
+  .unit .unit-branch { pointer-events: none; }
+  .unit .unit-label { font-size: 3.0px; fill: #1f1f1f; pointer-events: none; text-anchor: start;
+                      paint-order: stroke; stroke: rgba(255,255,255,.9); stroke-width: 0.7px; font-weight: 600; }
+  .unit .unit-echelon { font-size: 2.4px; fill: #1f1f1f; pointer-events: none; text-anchor: middle;
+                        paint-order: stroke; stroke: rgba(255,255,255,.95); stroke-width: 0.6px;
+                        font-weight: 700; letter-spacing: 0.04em; }
+
+  /* Sidebar unit editor (shares a lot with POI editor) */
+  #unit-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+  .unit-row { border: 1px solid #e2dfd7; border-radius: 5px; padding: 6px 7px; background: #fdfcf8;
+              display: flex; flex-direction: column; gap: 4px; }
+  .unit-row .r1 { display: flex; gap: 5px; align-items: center; }
+  .unit-row .r2, .unit-row .r3 { display: flex; gap: 5px; align-items: center; font-size: 10px;
+                                  text-transform: none; letter-spacing: normal; color: #64625c; flex-wrap: wrap; }
+  .unit-row input[type=text] { flex: 1; font-size: 12px; padding: 4px 6px; text-transform: none; letter-spacing: normal; }
+  .unit-row input[type=number] { width: 64px; padding: 3px 5px; font-size: 11px; text-transform: none; letter-spacing: normal; }
+  .unit-row input[type=color] { width: 26px; height: 22px; padding: 0; border-radius: 3px; cursor: pointer; }
+  .unit-row select { font-size: 11px; padding: 3px 4px; text-transform: none; letter-spacing: normal; }
+  .unit-row .preview { width: 36px; height: 22px; flex-shrink: 0; }
+  .unit-row .preview svg { width: 100%; height: 100%; display: block; }
+  .unit-row .row-btn { border: 1px solid #d5d0c3; background: #f9f7ef; border-radius: 3px;
+                       padding: 3px 7px; font-size: 11px; cursor: pointer; }
+  .unit-row .row-btn:hover { background: #eee7d1; }
+  .unit-row .delete-btn { color: #b03030; }
+  .unit-row .delete-btn:hover { background: #f6d9d9; border-color: #d59898; }
+  .unit-row .coord-label { font-size: 10px; color: #8a857a; }
+  .unit-row .reset-btn { font-size: 10px; color: #64625c; padding: 2px 5px; }
+  #unit-list .empty-note { font-size: 11px; color: #8a857a; padding: 6px 2px; }
+
   .pin { cursor: pointer; }
   .pin circle.outer { fill: rgba(194, 80, 80, .20); }
   .pin circle.inner { fill: #c25050; stroke: #fff; stroke-width: 0.6; }
@@ -224,6 +256,7 @@
       <button class="btn" id="btn-present">Presentation mode</button>
       <button class="btn" id="btn-toggle-pois">Hide POIs</button>
       <button class="btn" id="btn-toggle-events">Hide events</button>
+      <button class="btn" id="btn-toggle-units">Hide units</button>
       <button class="btn" id="btn-toggle-labels">Hide country labels</button>
       <button class="btn" id="btn-toggle-pinlabels">Show all pin labels</button>
       <button class="btn" id="btn-toggle-routes">Show sea routes</button>
@@ -238,6 +271,15 @@
       </div>
     </details>
 
+    <details class="panel" id="unit-editor-panel">
+      <summary>NATO units</summary>
+      <div id="unit-list"></div>
+      <div class="btn-row" style="margin-top:6px;">
+        <button class="btn" id="btn-unit-add-centre">+ Add at view centre</button>
+        <button class="btn" id="btn-unit-add-click">+ Click on map</button>
+      </div>
+    </details>
+
     <details class="panel" id="editor-panel">
       <summary>Live editor</summary>
 
@@ -247,6 +289,7 @@
         <button class="btn" id="mode-pin">Drop pin</button>
         <button class="btn" id="mode-poi-add">Add POI</button>
         <button class="btn" id="mode-poi-remove">Remove POI</button>
+        <button class="btn" id="mode-unit-add">Add unit</button>
       </div>
       <label class="field">
         Paint colour
@@ -388,6 +431,78 @@
             <rect x="4" y="3" width="3" height="11"/>
           </g>
         </symbol>
+
+        <!-- ============================================================
+             NATO UNIT BRANCH ICONS
+             Each symbol uses a 36x24 viewBox, centred on (18, 12).
+             They render inside the unit frame and inherit colour from
+             currentColor. Strokes use non-scaling-stroke so they remain
+             crisp when the symbol is drawn small.
+             ============================================================ -->
+        <symbol id="unit-br-none" viewBox="0 0 36 24"></symbol>
+        <symbol id="unit-br-infantry" viewBox="0 0 36 24">
+          <g stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none" vector-effect="non-scaling-stroke">
+            <line x1="6"  y1="4"  x2="30" y2="20"/>
+            <line x1="30" y1="4"  x2="6"  y2="20"/>
+          </g>
+        </symbol>
+        <symbol id="unit-br-armor" viewBox="0 0 36 24">
+          <ellipse cx="18" cy="12" rx="12" ry="5" fill="none" stroke="currentColor" stroke-width="2.4" vector-effect="non-scaling-stroke"/>
+        </symbol>
+        <symbol id="unit-br-mech" viewBox="0 0 36 24">
+          <g stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" vector-effect="non-scaling-stroke">
+            <ellipse cx="18" cy="12" rx="12" ry="5"/>
+            <line x1="7"  y1="5"  x2="29" y2="19"/>
+            <line x1="29" y1="5"  x2="7"  y2="19"/>
+          </g>
+        </symbol>
+        <symbol id="unit-br-recon" viewBox="0 0 36 24">
+          <line x1="6" y1="20" x2="30" y2="4" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+        </symbol>
+        <symbol id="unit-br-artillery" viewBox="0 0 36 24">
+          <circle cx="18" cy="12" r="4.5" fill="currentColor"/>
+        </symbol>
+        <symbol id="unit-br-airdefense" viewBox="0 0 36 24">
+          <path d="M 8 18 A 10 10 0 0 1 28 18" fill="none" stroke="currentColor" stroke-width="2.4" vector-effect="non-scaling-stroke"/>
+          <circle cx="18" cy="18" r="2.5" fill="currentColor"/>
+        </symbol>
+        <symbol id="unit-br-missile" viewBox="0 0 36 24">
+          <path d="M 18 3 L 12 12 L 15.5 12 L 15.5 21 L 20.5 21 L 20.5 12 L 24 12 Z" fill="currentColor"/>
+        </symbol>
+        <symbol id="unit-br-hq" viewBox="0 0 36 24">
+          <path d="M 7 22 L 7 4 L 27 4 L 27 10 L 7 10" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+        </symbol>
+        <symbol id="unit-br-engineer" viewBox="0 0 36 24">
+          <path d="M 9 5 L 9 19 M 9 5 L 23 5 M 9 12 L 20 12 M 9 19 L 23 19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+        </symbol>
+        <symbol id="unit-br-signal" viewBox="0 0 36 24">
+          <path d="M 17 4 L 23 10 L 19 12 L 25 20 L 14 14 L 18 12 Z" fill="currentColor"/>
+        </symbol>
+        <symbol id="unit-br-supply" viewBox="0 0 36 24">
+          <g fill="none" stroke="currentColor" stroke-width="2.2" vector-effect="non-scaling-stroke">
+            <rect x="8" y="7" width="20" height="10"/>
+            <line x1="8" y1="12" x2="28" y2="12"/>
+          </g>
+        </symbol>
+        <symbol id="unit-br-medical" viewBox="0 0 36 24">
+          <path d="M 15 4 h 6 v 5 h 5 v 6 h -5 v 5 h -6 v -5 h -5 v -6 h 5 Z" fill="currentColor"/>
+        </symbol>
+        <symbol id="unit-br-sof" viewBox="0 0 36 24">
+          <path d="M 18 4 L 9 15 L 15 15 L 15 20 L 21 20 L 21 15 L 27 15 Z" fill="currentColor"/>
+        </symbol>
+        <symbol id="unit-br-aviation" viewBox="0 0 36 24">
+          <path d="M 5 14 Q 18 2 31 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+          <circle cx="18" cy="14" r="1.6" fill="currentColor"/>
+        </symbol>
+        <symbol id="unit-br-aircraft" viewBox="0 0 36 24">
+          <path d="M 18 3 L 16.5 11 L 5 13 L 5 15 L 16 14.5 L 15.5 19 L 12 20.5 L 12 21.5 L 18 20.5 L 24 21.5 L 24 20.5 L 20.5 19 L 20 14.5 L 31 15 L 31 13 L 19.5 11 Z" fill="currentColor"/>
+        </symbol>
+        <symbol id="unit-br-naval" viewBox="0 0 36 24">
+          <path d="M 4 11 L 32 11 L 28 19 L 8 19 Z M 16 5 L 24 5 L 24 11 L 16 11 Z" fill="currentColor"/>
+        </symbol>
+        <symbol id="unit-br-submarine" viewBox="0 0 36 24">
+          <path d="M 4 14 L 32 14 L 32 18 L 4 18 Z M 15 9 L 21 9 L 21 14 L 15 14 Z" fill="currentColor"/>
+        </symbol>
       </defs>
       <!-- Everything inside #map-inner is clipped to the 1500x800 frame,
            so zoomed-in country paths and the ocean fill never spill past
@@ -401,6 +516,8 @@
           <g id="g-sea-route-labels"></g>
           <g id="g-pois"></g>
           <g id="g-poi-labels"></g>
+          <g id="g-units"></g>
+          <g id="g-unit-labels"></g>
           <g id="g-pins"></g>
         </g>
       </g>
@@ -476,6 +593,14 @@ window.GEO_DATA = {"type":"FeatureCollection","features":[{"type":"Feature","pro
 //   points: [ { id, name, coord:[lon,lat] } ]  small locations not in polygon data
 //
 // Images: place files in ./assets/images/ and reference by filename.
+
+// NATO unit markers. Separate from POIs so the two systems can evolve
+// independently. Each unit has: id, label, coord [lon, lat], affiliation
+// (friendly/hostile/neutral/unknown), branch (see UNIT_BRANCHES), echelon
+// (see UNIT_ECHELONS), and optional `color` to override the affiliation
+// default. Empty by default — the user builds the order of battle via the
+// sidebar editor.
+window.UNITS_DATA = { units: [] };
 
 window.SCENARIOS_DATA = {
   points: [
@@ -820,6 +945,265 @@ function getPoiByIdx(i) {
 }
 
 /* =====================================================================
+   NATO UNIT SYMBOLS
+   A lightweight APP-6 / 2525 style renderer for TTX order-of-battle work.
+   Each unit has an affiliation (which picks the frame shape + default
+   colours), a branch (inner icon), an echelon (size marker above the
+   frame), an optional text label, and an optional colour override.
+===================================================================== */
+const gUnits       = document.getElementById('g-units');
+const gUnitLabels  = document.getElementById('g-unit-labels');
+
+/* Frame dimensions are in map units. Frame is drawn centred on the POI
+   coord, so half-widths matter. */
+const UNIT_FRAME_W = 14;
+const UNIT_FRAME_H = 9;
+
+const UNIT_AFFILIATIONS = [
+  { key: 'friendly', label: 'Friendly', stroke: '#1e4fa8', fill: '#cfe0f4' },
+  { key: 'hostile',  label: 'Hostile',  stroke: '#a12626', fill: '#f4cfcf' },
+  { key: 'neutral',  label: 'Neutral',  stroke: '#1f7a3a', fill: '#cfecd8' },
+  { key: 'unknown',  label: 'Unknown',  stroke: '#a88a1e', fill: '#f4ecc6' }
+];
+const UNIT_AFF_MAP = Object.fromEntries(UNIT_AFFILIATIONS.map(a => [a.key, a]));
+
+const UNIT_BRANCHES = [
+  { key: 'none',       label: '— (plain frame)' },
+  { key: 'infantry',   label: 'Infantry' },
+  { key: 'mech',       label: 'Mechanised Infantry' },
+  { key: 'armor',      label: 'Armour' },
+  { key: 'recon',      label: 'Recon / Cavalry' },
+  { key: 'artillery',  label: 'Artillery' },
+  { key: 'airdefense', label: 'Air Defence' },
+  { key: 'missile',    label: 'Missile' },
+  { key: 'hq',         label: 'Headquarters' },
+  { key: 'engineer',   label: 'Engineer' },
+  { key: 'signal',     label: 'Signal / Comms' },
+  { key: 'supply',     label: 'Supply / Logistics' },
+  { key: 'medical',    label: 'Medical' },
+  { key: 'sof',        label: 'Special Forces' },
+  { key: 'aviation',   label: 'Aviation (rotary)' },
+  { key: 'aircraft',   label: 'Aircraft (fixed-wing)' },
+  { key: 'naval',      label: 'Naval (surface)' },
+  { key: 'submarine',  label: 'Naval (sub-surface)' }
+];
+const UNIT_BRANCH_KEYS = new Set(UNIT_BRANCHES.map(b => b.key));
+
+const UNIT_ECHELONS = [
+  { key: 'none',       label: '—', glyph: '' },
+  { key: 'team',       label: 'Team',        glyph: 'Ø' },
+  { key: 'squad',      label: 'Squad',       glyph: '•' },
+  { key: 'section',    label: 'Section',     glyph: '••' },
+  { key: 'platoon',    label: 'Platoon',     glyph: '•••' },
+  { key: 'company',    label: 'Company',     glyph: '|' },
+  { key: 'battalion',  label: 'Battalion',   glyph: '||' },
+  { key: 'regiment',   label: 'Regiment',    glyph: '|||' },
+  { key: 'brigade',    label: 'Brigade',     glyph: '×' },
+  { key: 'division',   label: 'Division',    glyph: '× ×' },
+  { key: 'corps',      label: 'Corps',       glyph: '× × ×' },
+  { key: 'army',       label: 'Army',        glyph: '× × × ×' },
+  { key: 'army_group', label: 'Army Group',  glyph: '× × × × ×' }
+];
+const UNIT_ECHELON_MAP = Object.fromEntries(UNIT_ECHELONS.map(e => [e.key, e]));
+
+/* Build the frame shape for an affiliation. Returns an SVG path d string
+   centred on (0, 0) with the frame extending ±UNIT_FRAME_W/2, ±UNIT_FRAME_H/2.
+   Friendly -> rectangle, Hostile -> diamond, Neutral -> square-ish,
+   Unknown -> rounded "cloud" shape. */
+function unitFramePath(aff) {
+  const hw = UNIT_FRAME_W / 2, hh = UNIT_FRAME_H / 2;
+  if (aff === 'hostile') {
+    // Diamond (rotated square). Use full width to preserve visual weight.
+    return `M 0 ${-hh} L ${hw} 0 L 0 ${hh} L ${-hw} 0 Z`;
+  }
+  if (aff === 'neutral') {
+    // Square — keep it inscribed in the full height, squished horizontally
+    // so it reads distinctly from "friendly".
+    const s = hh;
+    return `M ${-s} ${-s} L ${s} ${-s} L ${s} ${s} L ${-s} ${s} Z`;
+  }
+  if (aff === 'unknown') {
+    // Rounded quatrefoil-ish shape for "unknown pending".
+    const r = hh * 0.9;
+    return `M ${-hw + r} ${-hh}
+            L ${hw - r} ${-hh}
+            A ${r} ${r} 0 0 1 ${hw} ${-hh + r}
+            L ${hw} ${hh - r}
+            A ${r} ${r} 0 0 1 ${hw - r} ${hh}
+            L ${-hw + r} ${hh}
+            A ${r} ${r} 0 0 1 ${-hw} ${hh - r}
+            L ${-hw} ${-hh + r}
+            A ${r} ${r} 0 0 1 ${-hw + r} ${-hh} Z`;
+  }
+  // friendly (default): rectangle
+  return `M ${-hw} ${-hh} L ${hw} ${-hh} L ${hw} ${hh} L ${-hw} ${hh} Z`;
+}
+
+/* Resolve colours: if unit has a custom colour, use it for both stroke
+   and a lightened fill. Otherwise use the affiliation defaults. */
+function unitColors(unit) {
+  const aff = UNIT_AFF_MAP[unit.affiliation] || UNIT_AFF_MAP.friendly;
+  if (unit.color) {
+    return { stroke: unit.color, fill: lightenColor(unit.color, 0.75), branch: unit.color };
+  }
+  return { stroke: aff.stroke, fill: aff.fill, branch: aff.stroke };
+}
+
+/* Mix a hex colour toward white by amount (0..1). 0 = original, 1 = white. */
+function lightenColor(hex, amount) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
+  if (!m) return '#ffffff';
+  const v = parseInt(m[1], 16);
+  const r = (v >> 16) & 0xff, g = (v >> 8) & 0xff, b = v & 0xff;
+  const rr = Math.round(r + (255 - r) * amount);
+  const gg = Math.round(g + (255 - g) * amount);
+  const bb = Math.round(b + (255 - b) * amount);
+  return '#' + [rr, gg, bb].map(x => x.toString(16).padStart(2, '0')).join('');
+}
+
+function renderUnits() {
+  gUnits.innerHTML = '';
+  gUnitLabels.innerHTML = '';
+  const units = (window.UNITS_DATA && window.UNITS_DATA.units) || [];
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const hw = UNIT_FRAME_W / 2, hh = UNIT_FRAME_H / 2;
+
+  for (const u of units) {
+    if (!u.coord || !Number.isFinite(u.coord[0]) || !Number.isFinite(u.coord[1])) continue;
+    const [x, y] = project(u.coord);
+    const affKey = UNIT_AFF_MAP[u.affiliation] ? u.affiliation : 'friendly';
+    const branchKey = UNIT_BRANCH_KEYS.has(u.branch) ? u.branch : 'none';
+    const echelonKey = UNIT_ECHELON_MAP[u.echelon] ? u.echelon : 'none';
+    const { stroke, fill, branch } = unitColors(u);
+
+    const g = document.createElementNS(SVGNS, 'g');
+    g.setAttribute('class', 'unit');
+    g.setAttribute('transform', `translate(${x} ${y})`);
+    g.dataset.unitId = u.id;
+
+    const frame = document.createElementNS(SVGNS, 'path');
+    frame.setAttribute('d', unitFramePath(affKey));
+    frame.setAttribute('class', 'unit-frame');
+    frame.setAttribute('fill', fill);
+    frame.setAttribute('stroke', stroke);
+    g.appendChild(frame);
+
+    if (branchKey && branchKey !== 'none') {
+      const brW = UNIT_FRAME_W * 0.78;
+      const brH = UNIT_FRAME_H * 0.78;
+      const use = document.createElementNS(SVGNS, 'use');
+      use.setAttribute('href', '#unit-br-' + branchKey);
+      use.setAttribute('x', -brW / 2);
+      use.setAttribute('y', -brH / 2);
+      use.setAttribute('width',  brW);
+      use.setAttribute('height', brH);
+      use.setAttribute('class', 'unit-branch');
+      use.setAttribute('color', branch);
+      g.appendChild(use);
+    }
+
+    if (echelonKey && echelonKey !== 'none') {
+      const ech = document.createElementNS(SVGNS, 'text');
+      ech.setAttribute('class', 'unit-echelon');
+      ech.setAttribute('x', 0);
+      ech.setAttribute('y', -hh - 0.8);
+      ech.textContent = UNIT_ECHELON_MAP[echelonKey].glyph;
+      g.appendChild(ech);
+    }
+
+    // Tooltip: label, affiliation, branch + echelon summary.
+    const title = document.createElementNS(SVGNS, 'title');
+    const affLbl = UNIT_AFF_MAP[affKey].label;
+    const brLbl = (UNIT_BRANCHES.find(b => b.key === branchKey) || {}).label || '';
+    const echLbl = UNIT_ECHELON_MAP[echelonKey].label;
+    title.textContent = [u.label || '(unnamed)', `${affLbl} — ${brLbl}${echLbl !== '—' ? ' (' + echLbl + ')' : ''}`].join('\n');
+    g.appendChild(title);
+    gUnits.appendChild(g);
+
+    if (u.label) {
+      const t = document.createElementNS(SVGNS, 'text');
+      t.setAttribute('x', x + hw + 0.8);
+      t.setAttribute('y', y + 1.0);
+      t.setAttribute('class', 'unit-label');
+      t.dataset.unitId = u.id;
+      t.textContent = u.label;
+      gUnitLabels.appendChild(t);
+    }
+  }
+}
+
+/* ------ Sidebar unit editor ---------------------------------------- */
+function unitPreviewHtml(u) {
+  const affKey    = UNIT_AFF_MAP[u.affiliation] ? u.affiliation : 'friendly';
+  const branchKey = UNIT_BRANCH_KEYS.has(u.branch) ? u.branch : 'none';
+  const { stroke, fill, branch } = unitColors(u);
+  // A small standalone SVG showing the frame + branch, scaled to fit the swatch.
+  // We render in the same map-unit space but translate to the centre of a 40x24 viewBox.
+  const d = unitFramePath(affKey);
+  const tx = 20, ty = 12;
+  const brW = UNIT_FRAME_W * 0.78, brH = UNIT_FRAME_H * 0.78;
+  const useEl = (branchKey !== 'none')
+    ? `<use href="#unit-br-${branchKey}" x="${-brW/2}" y="${-brH/2}" width="${brW}" height="${brH}" color="${branch}"/>`
+    : '';
+  return `<svg viewBox="0 0 40 24" preserveAspectRatio="xMidYMid meet">
+    <g transform="translate(${tx} ${ty})">
+      <path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="0.8" stroke-linejoin="round"/>
+      ${useEl}
+    </g>
+  </svg>`;
+}
+function renderUnitEditor() {
+  const container = document.getElementById('unit-list');
+  if (!container) return;
+  const units = (window.UNITS_DATA && window.UNITS_DATA.units) || [];
+  if (!units.length) {
+    container.innerHTML = '<div class="empty-note">No units yet. Add one via the buttons below, or use the "Add unit" edit mode and click on the map.</div>';
+    return;
+  }
+  const affOptions = (sel) => UNIT_AFFILIATIONS.map(a =>
+    `<option value="${a.key}"${a.key === sel ? ' selected' : ''}>${escapeHtml(a.label)}</option>`).join('');
+  const brOptions = (sel) => UNIT_BRANCHES.map(b =>
+    `<option value="${b.key}"${b.key === sel ? ' selected' : ''}>${escapeHtml(b.label)}</option>`).join('');
+  const echOptions = (sel) => UNIT_ECHELONS.map(e =>
+    `<option value="${e.key}"${e.key === sel ? ' selected' : ''}>${escapeHtml(e.label)}</option>`).join('');
+
+  container.innerHTML = units.map((u, i) => {
+    const aff = UNIT_AFF_MAP[u.affiliation] ? u.affiliation : 'friendly';
+    const br  = UNIT_BRANCH_KEYS.has(u.branch) ? u.branch : 'none';
+    const ech = UNIT_ECHELON_MAP[u.echelon] ? u.echelon : 'none';
+    const lon = (u.coord && Number.isFinite(u.coord[0])) ? u.coord[0].toFixed(2) : '';
+    const lat = (u.coord && Number.isFinite(u.coord[1])) ? u.coord[1].toFixed(2) : '';
+    const customCol = u.color || UNIT_AFF_MAP[aff].stroke;
+    return `<div class="unit-row" data-idx="${i}">
+      <div class="r1">
+        <span class="preview">${unitPreviewHtml(u)}</span>
+        <input type="text" class="label-input" value="${escapeHtml(u.label || '')}" placeholder="Designation (e.g. 3-25 IN)">
+        <button class="row-btn delete-btn" title="Delete">&times;</button>
+      </div>
+      <div class="r2">
+        <select class="aff-select" title="Affiliation">${affOptions(aff)}</select>
+        <select class="branch-select" title="Branch">${brOptions(br)}</select>
+        <select class="echelon-select" title="Echelon">${echOptions(ech)}</select>
+      </div>
+      <div class="r3">
+        <span class="coord-label">lon</span>
+        <input type="number" step="0.01" class="lon-input" value="${lon}">
+        <span class="coord-label">lat</span>
+        <input type="number" step="0.01" class="lat-input" value="${lat}">
+        <button class="row-btn centre-btn" title="Centre on unit">Centre</button>
+        <span class="coord-label">colour</span>
+        <input type="color" class="color-input" value="${customCol}">
+        <button class="row-btn reset-btn" title="Clear custom colour">reset</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function getUnitByIdx(i) {
+  const us = (window.UNITS_DATA && window.UNITS_DATA.units) || [];
+  return us[i];
+}
+
+/* =====================================================================
    SEA ROUTES / TRADE LANES
    Hardcoded lon/lat polylines for key Asia-Pacific sea lines of
    communication. Chokepoints are labelled; long trunk SLOCs are not
@@ -897,6 +1281,7 @@ const state = {
   paintColor: '#6b9bd1',
   showPois: true,
   showEvents: true,
+  showUnits: true,
   showLabels: true,
   showRoutes: false,
   transform: { tx: 0, ty: 0, s: 1 }
@@ -1418,20 +1803,22 @@ const modeErase = document.getElementById('mode-erase');
 const modePin   = document.getElementById('mode-pin');
 const modePoiAdd    = document.getElementById('mode-poi-add');
 const modePoiRemove = document.getElementById('mode-poi-remove');
+const modeUnitAdd   = document.getElementById('mode-unit-add');
 const modeHint  = document.getElementById('mode-hint');
 const paintColor = document.getElementById('paint-color');
 
 function setMode(m) {
   state.mode = (state.mode === m) ? null : m;
-  [modePaint, modeErase, modePin, modePoiAdd, modePoiRemove].forEach(b => b.classList.remove('active'));
+  [modePaint, modeErase, modePin, modePoiAdd, modePoiRemove, modeUnitAdd].forEach(b => b.classList.remove('active'));
   svg.classList.remove('paint','pindrop');
   if (state.mode === 'paint' || state.mode === 'erase' || state.mode === 'poi-remove') svg.classList.add('paint');
-  if (state.mode === 'pin' || state.mode === 'poi-add') svg.classList.add('pindrop');
+  if (state.mode === 'pin' || state.mode === 'poi-add' || state.mode === 'unit-add') svg.classList.add('pindrop');
   if (state.mode === 'paint') { modePaint.classList.add('active'); modeHint.textContent = 'Click a country to fill it with the paint colour.'; }
   else if (state.mode === 'erase') { modeErase.classList.add('active'); modeHint.textContent = 'Click a country to remove its highlight.'; }
   else if (state.mode === 'pin')   { modePin.classList.add('active');   modeHint.textContent = 'Click anywhere on the map to drop a new event pin.'; }
   else if (state.mode === 'poi-add')    { modePoiAdd.classList.add('active');    modeHint.textContent = 'Click anywhere on the map to add a Point of Interest.'; }
   else if (state.mode === 'poi-remove') { modePoiRemove.classList.add('active'); modeHint.textContent = 'Click an existing POI marker to remove it.'; }
+  else if (state.mode === 'unit-add')   { modeUnitAdd.classList.add('active');   modeHint.textContent = 'Click anywhere on the map to drop a NATO unit counter.'; }
   else modeHint.textContent = 'Click a mode above, then click the map.';
 }
 modePaint.addEventListener('click', () => setMode('paint'));
@@ -1439,6 +1826,7 @@ modeErase.addEventListener('click', () => setMode('erase'));
 modePin.addEventListener('click',   () => setMode('pin'));
 modePoiAdd.addEventListener('click',    () => setMode('poi-add'));
 modePoiRemove.addEventListener('click', () => setMode('poi-remove'));
+modeUnitAdd.addEventListener('click',   () => setMode('unit-add'));
 paintColor.addEventListener('input', e => state.paintColor = e.target.value);
 
 /* map click handler */
@@ -1487,6 +1875,26 @@ svg.addEventListener('click', (e) => {
       renderPois();
       renderPoiEditor();
     }
+    return;
+  }
+  if (state.mode === 'unit-add') {
+    const [lon, lat] = screenToLonLat(e.clientX, e.clientY);
+    const label = prompt('Unit designation (e.g. 3-25 IN):');
+    if (label === null) { setMode(null); return; }
+    const id = 'unit-' + Date.now().toString(36);
+    if (!window.UNITS_DATA.units) window.UNITS_DATA.units = [];
+    window.UNITS_DATA.units.push({
+      id,
+      label: (label || '').trim() || 'New unit',
+      coord: [lon, lat],
+      affiliation: 'friendly',
+      branch: 'infantry',
+      echelon: 'platoon',
+      color: null
+    });
+    renderUnits();
+    renderUnitEditor();
+    setMode(null);
     return;
   }
 });
@@ -1558,6 +1966,131 @@ document.getElementById('btn-poi-add-centre').addEventListener('click', () => {
 });
 document.getElementById('btn-poi-add-click').addEventListener('click', () => setMode('poi-add'));
 
+/* =====================================================================
+   NATO UNIT EDITOR (sidebar list — edit label / coord / colour /
+   affiliation / branch / echelon, delete, centre, reset colour)
+===================================================================== */
+const unitListEl = document.getElementById('unit-list');
+
+function refreshUnitRowPreview(row, u) {
+  const preview = row.querySelector('.preview');
+  if (preview) preview.innerHTML = unitPreviewHtml(u);
+  const colorInput = row.querySelector('.color-input');
+  if (colorInput) {
+    const affKey = UNIT_AFF_MAP[u.affiliation] ? u.affiliation : 'friendly';
+    colorInput.value = u.color || UNIT_AFF_MAP[affKey].stroke;
+  }
+}
+
+unitListEl.addEventListener('input', (e) => {
+  const row = e.target.closest('.unit-row');
+  if (!row) return;
+  const idx = +row.dataset.idx;
+  const u = getUnitByIdx(idx);
+  if (!u) return;
+  if (e.target.classList.contains('label-input')) {
+    u.label = e.target.value;
+    renderUnits();
+    return;
+  }
+  if (e.target.classList.contains('lon-input') || e.target.classList.contains('lat-input')) {
+    const lonRaw = parseFloat(row.querySelector('.lon-input').value);
+    const latRaw = parseFloat(row.querySelector('.lat-input').value);
+    if (!u.coord) u.coord = [0, 0];
+    if (Number.isFinite(lonRaw)) u.coord[0] = lonRaw;
+    if (Number.isFinite(latRaw)) u.coord[1] = latRaw;
+    renderUnits();
+    return;
+  }
+  if (e.target.classList.contains('color-input')) {
+    u.color = e.target.value;
+    renderUnits();
+    refreshUnitRowPreview(row, u);
+    return;
+  }
+});
+
+unitListEl.addEventListener('change', (e) => {
+  const row = e.target.closest('.unit-row');
+  if (!row) return;
+  const idx = +row.dataset.idx;
+  const u = getUnitByIdx(idx);
+  if (!u) return;
+  if (e.target.classList.contains('aff-select')) {
+    u.affiliation = e.target.value;
+    renderUnits();
+    refreshUnitRowPreview(row, u);
+    return;
+  }
+  if (e.target.classList.contains('branch-select')) {
+    u.branch = e.target.value;
+    renderUnits();
+    refreshUnitRowPreview(row, u);
+    return;
+  }
+  if (e.target.classList.contains('echelon-select')) {
+    u.echelon = e.target.value;
+    renderUnits();
+    // echelon glyph doesn't show in preview swatch (frame + branch only)
+    return;
+  }
+});
+
+unitListEl.addEventListener('click', (e) => {
+  const row = e.target.closest('.unit-row');
+  if (!row) return;
+  const idx = +row.dataset.idx;
+  const u = getUnitByIdx(idx);
+  if (!u) return;
+  if (e.target.classList.contains('delete-btn')) {
+    if (!confirm('Delete unit "' + (u.label || 'unnamed') + '"?')) return;
+    window.UNITS_DATA.units.splice(idx, 1);
+    renderUnits();
+    renderUnitEditor();
+    return;
+  }
+  if (e.target.classList.contains('centre-btn')) {
+    if (u.coord && Number.isFinite(u.coord[0]) && Number.isFinite(u.coord[1])) {
+      zoomTo(u.coord[0], u.coord[1], Math.max(state.transform.s, 4), 550);
+    }
+    return;
+  }
+  if (e.target.classList.contains('reset-btn')) {
+    u.color = null;
+    renderUnits();
+    refreshUnitRowPreview(row, u);
+    return;
+  }
+});
+
+document.getElementById('btn-unit-add-centre').addEventListener('click', () => {
+  const rect = svg.getBoundingClientRect();
+  const [lon, lat] = screenToLonLat(rect.left + rect.width / 2, rect.top + rect.height / 2);
+  const label = prompt('Unit designation (e.g. 3-25 IN):');
+  if (label === null) return;
+  const id = 'unit-' + Date.now().toString(36);
+  if (!window.UNITS_DATA.units) window.UNITS_DATA.units = [];
+  window.UNITS_DATA.units.push({
+    id,
+    label: (label || '').trim() || 'New unit',
+    coord: [lon, lat],
+    affiliation: 'friendly',
+    branch: 'infantry',
+    echelon: 'platoon',
+    color: null
+  });
+  renderUnits();
+  renderUnitEditor();
+});
+document.getElementById('btn-unit-add-click').addEventListener('click', () => setMode('unit-add'));
+
+document.getElementById('btn-toggle-units').addEventListener('click', (e) => {
+  state.showUnits = !state.showUnits;
+  gUnits.style.display = state.showUnits ? '' : 'none';
+  gUnitLabels.style.display = state.showUnits ? '' : 'none';
+  e.target.textContent = state.showUnits ? 'Hide units' : 'Show units';
+});
+
 /* Expand edit fields when editor panel is open */
 document.getElementById('editor-panel').addEventListener('toggle', (e) => {
   const open = e.target.open;
@@ -1577,6 +2110,7 @@ document.getElementById('btn-export').addEventListener('click', () => {
     currentEventIdx: state.currentEventIdx,
     scenario: state.scenario,
     points: (window.SCENARIOS_DATA && window.SCENARIOS_DATA.points) || [],
+    units:  (window.UNITS_DATA && window.UNITS_DATA.units) || [],
     exportedAt: new Date().toISOString()
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -1598,7 +2132,9 @@ document.getElementById('file-import').addEventListener('change', (e) => {
       state.highlights = p.highlights || {};
       state.currentEventIdx = p.currentEventIdx ?? (p.scenario.events.length ? 0 : -1);
       if (Array.isArray(p.points)) window.SCENARIOS_DATA.points = p.points;
-      repaintHighlights(); renderPins(); renderPois(); renderPoiEditor(); renderSidebar();
+      if (Array.isArray(p.units))  window.UNITS_DATA.units = p.units;
+      repaintHighlights(); renderPins(); renderPois(); renderPoiEditor();
+      renderUnits(); renderUnitEditor(); renderSidebar();
       if (state.currentEventIdx >= 0) focusEvent(state.currentEventIdx, false);
       selScenario.value = state.scenarioId;
     } catch (err) { alert('Could not read session file: ' + err.message); }
@@ -1618,6 +2154,8 @@ document.getElementById('btn-reset').addEventListener('click', () => {
 renderCountries();
 renderPois();
 renderPoiEditor();
+renderUnits();
+renderUnitEditor();
 renderSeaRoutes();
 // Sea routes default to hidden — user opts in via the View toggle.
 gSeaRoutes.style.display = state.showRoutes ? '' : 'none';
