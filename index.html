@@ -20,7 +20,7 @@
 
   #sidebar { background: #ffffff; border-right: 1px solid #e2dfd7;
              overflow-y: auto; padding: 18px 18px 28px; display: flex; flex-direction: column; gap: 14px; }
-  #map-wrap { position: relative; overflow: hidden; background: #f6f5f1; }
+  #map-wrap { position: relative; overflow: hidden; background: #dce7f0; }
 
   /* ---------- sidebar pieces ---------- */
   .brand { font-size: 14px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
@@ -70,11 +70,6 @@
   .country:hover { fill: #dad4c3; }
   .country.selected-edit { stroke: #2b2b2b; stroke-width: 1.1; }
 
-  /* Black frame around the full map extent — drawn in viewBox units so it
-     stays put while the user pans/zooms the viewport group below it. */
-  .map-frame { fill: none; stroke: #111; stroke-width: 4; pointer-events: none;
-               shape-rendering: crispEdges; }
-
   /* Sea lanes / trade routes layer (toggleable). */
   .sea-route { fill: none; stroke: #1d4e89; stroke-width: 1.4;
                stroke-dasharray: 3 2; stroke-linejoin: round; stroke-linecap: round;
@@ -89,9 +84,30 @@
   .country-label { font-size: 11px; fill: #2b2b2b; font-weight: 600; pointer-events: none;
                    text-anchor: middle; paint-order: stroke; stroke: rgba(255,255,255,.9); stroke-width: 2.2px;
                    letter-spacing: 0.02em; }
-  .poi { fill: #4a4741; }
+  .poi { color: #4a4741; fill: #4a4741; cursor: pointer; }
+  .poi-icon { color: #2b2b2b; cursor: pointer; }
   .poi-label { font-size: 3.2px; fill: #333; pointer-events: none; text-anchor: start;
                paint-order: stroke; stroke: rgba(255,255,255,.85); stroke-width: 0.7px; }
+
+  /* Sidebar POI editor */
+  #poi-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+  .poi-row { border: 1px solid #e2dfd7; border-radius: 5px; padding: 6px 7px; background: #fdfcf8;
+             display: flex; flex-direction: column; gap: 4px; }
+  .poi-row .r1 { display: flex; gap: 5px; align-items: center; }
+  .poi-row .r2 { display: flex; gap: 5px; align-items: center; font-size: 10px; text-transform: none;
+                 letter-spacing: normal; color: #64625c; }
+  .poi-row .r2 input { width: 64px; padding: 3px 5px; font-size: 11px; text-transform: none; letter-spacing: normal; }
+  .poi-row .r2 .coord-label { font-size: 10px; color: #8a857a; }
+  .poi-row .preview { width: 20px; height: 20px; flex-shrink: 0; }
+  .poi-row .preview svg { width: 100%; height: 100%; color: #2b2b2b; }
+  .poi-row .name-input { flex: 1; font-size: 12px; padding: 4px 6px; text-transform: none; letter-spacing: normal; }
+  .poi-row .icon-select { font-size: 11px; padding: 3px 4px; max-width: 110px; text-transform: none; letter-spacing: normal; }
+  .poi-row .row-btn { border: 1px solid #d5d0c3; background: #f9f7ef; border-radius: 3px;
+                      padding: 3px 7px; font-size: 11px; cursor: pointer; }
+  .poi-row .row-btn:hover { background: #eee7d1; }
+  .poi-row .delete-btn { color: #b03030; }
+  .poi-row .delete-btn:hover { background: #f6d9d9; border-color: #d59898; }
+  #poi-list .empty-note { font-size: 11px; color: #8a857a; padding: 6px 2px; }
 
   .pin { cursor: pointer; }
   .pin circle.outer { fill: rgba(194, 80, 80, .20); }
@@ -106,7 +122,7 @@
   @keyframes pulse { 0% { r: 2.2; opacity: .8; } 100% { r: 6.5; opacity: 0; } }
 
   /* ---------- HUD ---------- */
-  #hud { position: absolute; bottom: 14px; right: 14px; display: flex; flex-direction: column; gap: 6px;
+  #hud { position: absolute; bottom: 18px; right: 18px; display: flex; flex-direction: column; gap: 8px;
          align-items: flex-end; }
   #hud .zoom-group { display: flex; flex-direction: column; gap: 6px; }
   #hud button { width: 36px; height: 36px; font-size: 18px; background: #fff; border: 1px solid #cfcabd;
@@ -114,16 +130,19 @@
   #hud button:hover { background: #f3f0e6; }
   #scale-bar { background: #fff; border: 1px solid #cfcabd; border-radius: 4px;
                box-shadow: 0 1px 3px rgba(0,0,0,.06); padding: 5px 8px 4px;
-               font-size: 10px; line-height: 1; color: #3a3a3a; text-align: center; min-width: 36px; }
+               font-size: 10px; line-height: 1; color: #3a3a3a; text-align: center; min-width: 80px; }
   #scale-bar .sb-label { margin-bottom: 3px; letter-spacing: .02em; }
-  #scale-bar .sb-track { position: relative; height: 8px; }
+  #scale-bar .sb-track { position: relative; height: 8px; margin: 0 auto; }
   #scale-bar .sb-bar { position: absolute; left: 0; top: 3px; height: 4px;
                        background: #2b2b2b; border: 1px solid #2b2b2b; border-radius: 1px; }
   #scale-bar .sb-tick { position: absolute; top: 0; width: 1px; height: 8px; background: #2b2b2b; }
 
-  #prev-next { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px;
+  #prev-next { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px;
                background: #fff; border: 1px solid #cfcabd; border-radius: 6px; padding: 6px; box-shadow: 0 2px 6px rgba(0,0,0,.08); }
-  #prev-next .event-label { min-width: 240px; padding: 0 10px; display: flex; align-items: center; font-size: 13px; color: #3a3a3a; }
+  #prev-next .event-label { width: 360px; flex: 0 0 360px; padding: 0 10px;
+                            display: flex; align-items: center; justify-content: center;
+                            font-size: 13px; color: #3a3a3a; text-align: center;
+                            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   body.presenting #sidebar-toggle { display: block; }
   #sidebar-toggle { position: absolute; top: 14px; left: 14px; display: none; background: #fff; border: 1px solid #cfcabd; border-radius: 4px; padding: 6px 10px; font-size: 12px; }
 
@@ -204,10 +223,20 @@
     <div class="btn-row">
       <button class="btn" id="btn-present">Presentation mode</button>
       <button class="btn" id="btn-toggle-pois">Hide POIs</button>
+      <button class="btn" id="btn-toggle-events">Hide events</button>
       <button class="btn" id="btn-toggle-labels">Hide country labels</button>
       <button class="btn" id="btn-toggle-pinlabels">Show all pin labels</button>
       <button class="btn" id="btn-toggle-routes">Show sea routes</button>
     </div>
+
+    <details class="panel" id="poi-editor-panel">
+      <summary>POIs</summary>
+      <div id="poi-list"></div>
+      <div class="btn-row" style="margin-top:6px;">
+        <button class="btn" id="btn-poi-add-centre">+ Add at view centre</button>
+        <button class="btn" id="btn-poi-add-click">+ Click on map</button>
+      </div>
+    </details>
 
     <details class="panel" id="editor-panel">
       <summary>Live editor</summary>
@@ -243,11 +272,122 @@
 
   <main id="map-wrap">
     <button id="sidebar-toggle">Show panel</button>
-    <svg id="map" viewBox="0 0 1500 800" preserveAspectRatio="xMidYMid meet">
+    <svg id="map" viewBox="0 0 1500 800" preserveAspectRatio="xMidYMid slice">
       <defs>
         <clipPath id="map-clip" clipPathUnits="userSpaceOnUse">
           <rect x="0" y="0" width="1500" height="800"></rect>
         </clipPath>
+
+        <!-- ============================================================
+             POI ICON LIBRARY
+             Each symbol uses a 24x24 viewBox. Strokes use
+             vector-effect="non-scaling-stroke" so they stay readable at
+             any zoom level. fill="currentColor" lets us recolour via CSS.
+             ============================================================ -->
+        <symbol id="poi-dot" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="8" fill="currentColor"/>
+        </symbol>
+        <symbol id="poi-anchor" viewBox="0 0 24 24">
+          <g fill="currentColor">
+            <circle cx="12" cy="4.5" r="2"/>
+            <rect x="11" y="5.5" width="2" height="15"/>
+            <rect x="8" y="9" width="8" height="1.8"/>
+            <path d="M 3 11 L 5 11 L 5 13 C 5 15.76 7.24 18 10 18 L 11 18 L 11 20 L 10 20 C 6.13 20 3 16.87 3 13 Z"/>
+            <path d="M 21 11 L 19 11 L 19 13 C 19 15.76 16.76 18 14 18 L 13 18 L 13 20 L 14 20 C 17.87 20 21 16.87 21 13 Z"/>
+          </g>
+        </symbol>
+        <symbol id="poi-airplane" viewBox="0 0 24 24">
+          <path fill="currentColor" d="M 12 2 L 13 3 L 13 9.5 L 22 13.5 L 22 15.5 L 13 13 L 13 19 L 15.5 20.8 L 15.5 22 L 12 21.1 L 8.5 22 L 8.5 20.8 L 11 19 L 11 13 L 2 15.5 L 2 13.5 L 11 9.5 L 11 3 Z"/>
+        </symbol>
+        <symbol id="poi-hospital" viewBox="0 0 24 24">
+          <path fill="currentColor" d="M 9 3 h 6 v 6 h 6 v 6 h -6 v 6 h -6 v -6 h -6 v -6 h 6 Z"/>
+        </symbol>
+        <symbol id="poi-nuclear" viewBox="0 0 24 24">
+          <g fill="currentColor">
+            <circle cx="12" cy="12" r="2.5"/>
+            <path d="M 12 3.5 A 8.5 8.5 0 0 1 19.36 7.75 L 15.46 10 A 4 4 0 0 0 12 8 Z"/>
+            <path d="M 19.36 16.25 A 8.5 8.5 0 0 1 4.64 16.25 L 8.54 14 A 4 4 0 0 0 15.46 14 Z"/>
+            <path d="M 4.64 7.75 A 8.5 8.5 0 0 1 12 3.5 L 12 8 A 4 4 0 0 0 8.54 10 Z"/>
+          </g>
+        </symbol>
+        <symbol id="poi-star" viewBox="0 0 24 24">
+          <path fill="currentColor" d="M 12 2 L 14.7 9.3 L 22.5 9.5 L 16.2 14.2 L 18.5 22 L 12 17.5 L 5.5 22 L 7.8 14.2 L 1.5 9.5 L 9.3 9.3 Z"/>
+        </symbol>
+        <symbol id="poi-flag" viewBox="0 0 24 24">
+          <g fill="currentColor">
+            <rect x="5" y="3" width="2" height="19"/>
+            <path d="M 7 4 L 19 4 L 16 8 L 19 12 L 7 12 Z"/>
+          </g>
+        </symbol>
+        <symbol id="poi-ship" viewBox="0 0 24 24">
+          <g fill="currentColor">
+            <path d="M 2 15 L 22 15 L 19 20 L 5 20 Z"/>
+            <rect x="11" y="3" width="2" height="12"/>
+            <path d="M 13 5 L 19 10 L 13 10 Z"/>
+            <path d="M 11 7 L 5 11 L 11 11 Z"/>
+          </g>
+        </symbol>
+        <symbol id="poi-missile" viewBox="0 0 24 24">
+          <g fill="currentColor">
+            <path d="M 12 2 L 10 6 L 10 17 L 14 17 L 14 6 Z"/>
+            <path d="M 10 17 L 8 22 L 10.5 20.7 L 13.5 20.7 L 16 22 L 14 17 Z"/>
+            <path d="M 10 12 L 6 17 L 6 13.5 L 10 9.5 Z"/>
+            <path d="M 14 12 L 18 17 L 18 13.5 L 14 9.5 Z"/>
+          </g>
+        </symbol>
+        <symbol id="poi-target" viewBox="0 0 24 24">
+          <g fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke">
+            <circle cx="12" cy="12" r="9"/>
+            <circle cx="12" cy="12" r="5"/>
+          </g>
+          <circle cx="12" cy="12" r="1.8" fill="currentColor"/>
+          <g stroke="currentColor" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke">
+            <line x1="12" y1="1" x2="12" y2="5"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="1" y1="12" x2="5" y2="12"/>
+            <line x1="19" y1="12" x2="23" y2="12"/>
+          </g>
+        </symbol>
+        <symbol id="poi-comms" viewBox="0 0 24 24">
+          <g fill="currentColor">
+            <path d="M 12 2 L 15 17 L 9 17 Z"/>
+            <rect x="7" y="19" width="10" height="2"/>
+            <rect x="9" y="17" width="6" height="2"/>
+          </g>
+          <g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke">
+            <path d="M 4 8 Q 2 12 4 16"/>
+            <path d="M 20 8 Q 22 12 20 16"/>
+          </g>
+        </symbol>
+        <symbol id="poi-fuel" viewBox="0 0 24 24">
+          <g fill="currentColor">
+            <rect x="3" y="6" width="11" height="15" rx="1"/>
+            <rect x="5" y="2" width="7" height="4" rx="0.5"/>
+            <path d="M 14 11 L 17 11 L 17 17 C 17 18 17.5 18 18.5 18 C 19.5 18 20 18 20 17 L 20 10 L 17.5 6.5 L 16.5 7.5 L 18 9.5 L 18 11 Z"/>
+          </g>
+        </symbol>
+        <symbol id="poi-warning" viewBox="0 0 24 24">
+          <path d="M 12 2 L 22 20 L 2 20 Z" fill="currentColor"/>
+          <rect x="11" y="8" width="2" height="7" fill="#fff"/>
+          <rect x="11" y="16.5" width="2" height="2" fill="#fff"/>
+        </symbol>
+        <symbol id="poi-building" viewBox="0 0 24 24">
+          <rect x="3" y="7" width="18" height="15" fill="currentColor"/>
+          <g fill="#dce7f0">
+            <rect x="5" y="9" width="3" height="3"/>
+            <rect x="10" y="9" width="3" height="3"/>
+            <rect x="16" y="9" width="3" height="3"/>
+            <rect x="5" y="13" width="3" height="3"/>
+            <rect x="16" y="13" width="3" height="3"/>
+            <rect x="10" y="17" width="4" height="5"/>
+          </g>
+        </symbol>
+        <symbol id="poi-factory" viewBox="0 0 24 24">
+          <g fill="currentColor">
+            <path d="M 2 22 L 2 14 L 8 10 L 8 14 L 14 10 L 14 14 L 22 10 L 22 22 Z"/>
+            <rect x="4" y="3" width="3" height="11"/>
+          </g>
+        </symbol>
       </defs>
       <!-- Everything inside #map-inner is clipped to the 1500x800 frame,
            so zoomed-in country paths and the ocean fill never spill past
@@ -264,7 +404,6 @@
           <g id="g-pins"></g>
         </g>
       </g>
-      <rect class="map-frame" x="0" y="0" width="1500" height="800"></rect>
     </svg>
 
     <div id="hud">
@@ -578,27 +717,106 @@ function renderCountries() {
   }
 }
 
+/* POI icon library: each key maps to a <symbol id="poi-<key>"> defined in
+   the SVG's <defs>. 'dot' is the fallback/default. */
+const POI_ICONS = [
+  { key: 'dot',      label: 'Dot' },
+  { key: 'anchor',   label: 'Anchor (naval)' },
+  { key: 'airplane', label: 'Airplane (air base)' },
+  { key: 'ship',     label: 'Ship (surface)' },
+  { key: 'missile',  label: 'Missile' },
+  { key: 'nuclear',  label: 'Nuclear' },
+  { key: 'hospital', label: 'Hospital' },
+  { key: 'star',     label: 'Star / key site' },
+  { key: 'flag',     label: 'Flag / HQ' },
+  { key: 'target',   label: 'Target' },
+  { key: 'comms',    label: 'Comms / SIGINT' },
+  { key: 'fuel',     label: 'Fuel depot' },
+  { key: 'building', label: 'Building / urban' },
+  { key: 'factory',  label: 'Industrial' },
+  { key: 'warning',  label: 'Hazard / warning' }
+];
+const POI_ICON_KEYS = new Set(POI_ICONS.map(i => i.key));
+const POI_ICON_SIZE = 5.5; // map units; icons are drawn centred on POI coord
+const POI_DOT_R = 1.0;
+
 function renderPois() {
   gPois.innerHTML = '';
   gPoiLabels.innerHTML = '';
   const pts = (window.SCENARIOS_DATA || {points: []}).points;
   for (const p of pts) {
     const [x, y] = project(p.coord);
-    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 1.0);
-    c.setAttribute('class', 'poi');
-    c.dataset.poiId = p.id;
+    const iconKey = (p.icon && POI_ICON_KEYS.has(p.icon)) ? p.icon : 'dot';
+    let el;
+    if (iconKey === 'dot') {
+      el = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      el.setAttribute('cx', x); el.setAttribute('cy', y); el.setAttribute('r', POI_DOT_R);
+      el.setAttribute('class', 'poi');
+    } else {
+      el = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+      el.setAttribute('href', '#poi-' + iconKey);
+      el.setAttribute('x', x - POI_ICON_SIZE / 2);
+      el.setAttribute('y', y - POI_ICON_SIZE / 2);
+      el.setAttribute('width',  POI_ICON_SIZE);
+      el.setAttribute('height', POI_ICON_SIZE);
+      el.setAttribute('class', 'poi poi-icon');
+    }
+    el.dataset.poiId = p.id;
     const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
     title.textContent = p.name;
-    c.appendChild(title);
-    gPois.appendChild(c);
+    el.appendChild(title);
+    gPois.appendChild(el);
+    const labelOffset = iconKey === 'dot' ? 1.6 : (POI_ICON_SIZE / 2 + 0.6);
     const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    t.setAttribute('x', x + 1.6); t.setAttribute('y', y + 1.0);
+    t.setAttribute('x', x + labelOffset); t.setAttribute('y', y + 1.0);
     t.setAttribute('class', 'poi-label');
     t.dataset.poiId = p.id;
     t.textContent = p.name;
     gPoiLabels.appendChild(t);
   }
+}
+
+/* ------ Sidebar POI editor ----------------------------------------- */
+function iconPreviewHtml(iconKey) {
+  const key = POI_ICON_KEYS.has(iconKey) ? iconKey : 'dot';
+  return '<svg viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet"><use href="#poi-' + key + '"/></svg>';
+}
+function renderPoiEditor() {
+  const container = document.getElementById('poi-list');
+  if (!container) return;
+  const pts = (window.SCENARIOS_DATA && window.SCENARIOS_DATA.points) || [];
+  if (!pts.length) {
+    container.innerHTML = '<div class="empty-note">No POIs yet. Use the buttons below to add one, or set the "Add POI" edit mode and click on the map.</div>';
+    return;
+  }
+  const rows = pts.map((p, i) => {
+    const iconKey = (p.icon && POI_ICON_KEYS.has(p.icon)) ? p.icon : 'dot';
+    const options = POI_ICONS.map(o =>
+      '<option value="' + o.key + '"' + (o.key === iconKey ? ' selected' : '') + '>' + escapeHtml(o.label) + '</option>'
+    ).join('');
+    const lon = (p.coord && typeof p.coord[0] === 'number') ? p.coord[0].toFixed(2) : '';
+    const lat = (p.coord && typeof p.coord[1] === 'number') ? p.coord[1].toFixed(2) : '';
+    return '<div class="poi-row" data-idx="' + i + '">'
+         +   '<div class="r1">'
+         +     '<span class="preview">' + iconPreviewHtml(iconKey) + '</span>'
+         +     '<input type="text" class="name-input" value="' + escapeHtml(p.name || '') + '" placeholder="POI name">'
+         +     '<select class="icon-select">' + options + '</select>'
+         +     '<button class="row-btn delete-btn" title="Delete">&times;</button>'
+         +   '</div>'
+         +   '<div class="r2">'
+         +     '<span class="coord-label">lon</span>'
+         +     '<input type="number" step="0.01" class="lon-input" value="' + lon + '">'
+         +     '<span class="coord-label">lat</span>'
+         +     '<input type="number" step="0.01" class="lat-input" value="' + lat + '">'
+         +     '<button class="row-btn centre-btn" title="Centre map on POI">Centre</button>'
+         +   '</div>'
+         + '</div>';
+  });
+  container.innerHTML = rows.join('');
+}
+function getPoiByIdx(i) {
+  const pts = (window.SCENARIOS_DATA && window.SCENARIOS_DATA.points) || [];
+  return pts[i];
 }
 
 /* =====================================================================
@@ -678,6 +896,7 @@ const state = {
   mode: null,         // null | 'paint' | 'erase' | 'pin'
   paintColor: '#6b9bd1',
   showPois: true,
+  showEvents: true,
   showLabels: true,
   showRoutes: false,
   transform: { tx: 0, ty: 0, s: 1 }
@@ -726,7 +945,8 @@ function updateScaleBar() {
   const label = document.getElementById('sb-label');
   const bar   = document.getElementById('sb-bar');
   const tick  = document.getElementById('sb-tick-end');
-  if (!label || !bar || !tick) return;
+  const track = bar ? bar.parentElement : null;
+  if (!label || !bar || !tick || !track) return;
   const s = state.transform.s || 1;
   // Figure out the latitude at the centre of the current viewport (in map coords).
   const cxMap = (MAP_W / 2 - state.transform.tx) / s;
@@ -734,8 +954,12 @@ function updateScaleBar() {
   const centreLat = LAT_MAX - cyMap / MAP_H * (LAT_MAX - LAT_MIN);
   // Viewport is rendered into a DOM width; compute map-units → screen pixels.
   const rect = svg.getBoundingClientRect();
-  const screenPxPerMapUnitX = (rect.width / MAP_W) * s;
-  // Map units per degree longitude:
+  if (!rect.width) return;
+  // With preserveAspectRatio="slice", the viewBox is scaled to cover the
+  // element. Use max so the scale factor reflects the actual on-screen
+  // rendering, regardless of which axis overflows.
+  const pxPerViewBoxUnit = Math.max(rect.width / MAP_W, rect.height / MAP_H);
+  const screenPxPerMapUnitX = pxPerViewBoxUnit * s;
   const mapUnitsPerDegLon = MAP_W / (LON_MAX - LON_MIN);
   const screenPxPerDegLon = screenPxPerMapUnitX * mapUnitsPerDegLon;
   const kmPerDegLon = 111 * Math.cos(centreLat * Math.PI / 180);
@@ -746,9 +970,10 @@ function updateScaleBar() {
   let nice = NICE_KM[0];
   for (const n of NICE_KM) { if (n <= targetKm) nice = n; }
   const width = Math.max(1, Math.round(nice * screenPxPerKm));
-  bar.style.width = width + 'px';
-  tick.style.left = width + 'px';
-  label.textContent = (nice >= 1000 ? (nice / 1000) + ',000' : String(nice)) + ' km';
+  track.style.width = width + 'px';
+  bar.style.width   = width + 'px';
+  tick.style.left   = width + 'px';
+  label.textContent = nice.toLocaleString() + ' km';
 }
 function fitView() {
   state.transform = { tx: 0, ty: 0, s: 1 };
@@ -1064,9 +1289,12 @@ function updatePrevNext() {
   const lbl = document.getElementById('pn-label');
   if (!state.scenario || state.currentEventIdx < 0) {
     lbl.textContent = '— no event —';
+    lbl.title = '';
   } else {
     const ev = state.scenario.events[state.currentEventIdx];
-    lbl.textContent = `${state.currentEventIdx + 1}/${state.scenario.events.length}  ${ev.time ? ev.time+' — ' : ''}${ev.title}`;
+    const txt = `${state.currentEventIdx + 1}/${state.scenario.events.length}  ${ev.time ? ev.time+' — ' : ''}${ev.title}`;
+    lbl.textContent = txt;
+    lbl.title = txt;
   }
 }
 function escapeHtml(s) {
@@ -1159,6 +1387,11 @@ document.getElementById('btn-toggle-pois').addEventListener('click', (e) => {
   gPoiLabels.style.display = state.showPois ? '' : 'none';
   e.target.textContent = state.showPois ? 'Hide POIs' : 'Show POIs';
 });
+document.getElementById('btn-toggle-events').addEventListener('click', (e) => {
+  state.showEvents = !state.showEvents;
+  gPins.style.display = state.showEvents ? '' : 'none';
+  e.target.textContent = state.showEvents ? 'Hide events' : 'Show events';
+});
 document.getElementById('btn-toggle-labels').addEventListener('click', (e) => {
   state.showLabels = !state.showLabels;
   gCountryLabels.style.display = state.showLabels ? '' : 'none';
@@ -1240,8 +1473,9 @@ svg.addEventListener('click', (e) => {
     if (!name || !name.trim()) { setMode(null); return; }
     const id = 'poi-' + Date.now().toString(36);
     if (!window.SCENARIOS_DATA.points) window.SCENARIOS_DATA.points = [];
-    window.SCENARIOS_DATA.points.push({ id, name: name.trim(), coord: [lon, lat] });
+    window.SCENARIOS_DATA.points.push({ id, name: name.trim(), coord: [lon, lat], icon: 'dot' });
     renderPois();
+    renderPoiEditor();
     setMode(null);
     return;
   }
@@ -1251,10 +1485,78 @@ svg.addEventListener('click', (e) => {
       const id = poiTarget.dataset.poiId;
       window.SCENARIOS_DATA.points = (window.SCENARIOS_DATA.points || []).filter(p => p.id !== id);
       renderPois();
+      renderPoiEditor();
     }
     return;
   }
 });
+
+/* =====================================================================
+   POI EDITOR (sidebar list — edit name / coord / icon, delete, centre)
+===================================================================== */
+const poiListEl = document.getElementById('poi-list');
+poiListEl.addEventListener('input', (e) => {
+  const row = e.target.closest('.poi-row');
+  if (!row) return;
+  const idx = +row.dataset.idx;
+  const p = getPoiByIdx(idx);
+  if (!p) return;
+  if (e.target.classList.contains('name-input')) {
+    p.name = e.target.value;
+    renderPois();
+    return;
+  }
+  if (e.target.classList.contains('lon-input') || e.target.classList.contains('lat-input')) {
+    const lonRaw = parseFloat(row.querySelector('.lon-input').value);
+    const latRaw = parseFloat(row.querySelector('.lat-input').value);
+    if (Number.isFinite(lonRaw)) p.coord[0] = lonRaw;
+    if (Number.isFinite(latRaw)) p.coord[1] = latRaw;
+    renderPois();
+    return;
+  }
+  if (e.target.classList.contains('icon-select')) {
+    p.icon = e.target.value;
+    renderPois();
+    // Update preview swatch without a full list re-render to keep focus.
+    const preview = row.querySelector('.preview');
+    if (preview) preview.innerHTML = iconPreviewHtml(p.icon);
+    return;
+  }
+});
+poiListEl.addEventListener('click', (e) => {
+  const row = e.target.closest('.poi-row');
+  if (!row) return;
+  const idx = +row.dataset.idx;
+  const p = getPoiByIdx(idx);
+  if (!p) return;
+  if (e.target.classList.contains('delete-btn')) {
+    if (!confirm('Delete POI "' + (p.name || 'unnamed') + '"?')) return;
+    window.SCENARIOS_DATA.points.splice(idx, 1);
+    renderPois();
+    renderPoiEditor();
+    return;
+  }
+  if (e.target.classList.contains('centre-btn')) {
+    if (p.coord && Number.isFinite(p.coord[0]) && Number.isFinite(p.coord[1])) {
+      zoomTo(p.coord[0], p.coord[1], Math.max(state.transform.s, 4), 550);
+    }
+    return;
+  }
+});
+
+document.getElementById('btn-poi-add-centre').addEventListener('click', () => {
+  // Compute current view centre in lon/lat and add a POI there.
+  const rect = svg.getBoundingClientRect();
+  const [lon, lat] = screenToLonLat(rect.left + rect.width / 2, rect.top + rect.height / 2);
+  const name = prompt('POI name:');
+  if (!name || !name.trim()) return;
+  const id = 'poi-' + Date.now().toString(36);
+  if (!window.SCENARIOS_DATA.points) window.SCENARIOS_DATA.points = [];
+  window.SCENARIOS_DATA.points.push({ id, name: name.trim(), coord: [lon, lat], icon: 'dot' });
+  renderPois();
+  renderPoiEditor();
+});
+document.getElementById('btn-poi-add-click').addEventListener('click', () => setMode('poi-add'));
 
 /* Expand edit fields when editor panel is open */
 document.getElementById('editor-panel').addEventListener('toggle', (e) => {
@@ -1296,7 +1598,7 @@ document.getElementById('file-import').addEventListener('change', (e) => {
       state.highlights = p.highlights || {};
       state.currentEventIdx = p.currentEventIdx ?? (p.scenario.events.length ? 0 : -1);
       if (Array.isArray(p.points)) window.SCENARIOS_DATA.points = p.points;
-      repaintHighlights(); renderPins(); renderPois(); renderSidebar();
+      repaintHighlights(); renderPins(); renderPois(); renderPoiEditor(); renderSidebar();
       if (state.currentEventIdx >= 0) focusEvent(state.currentEventIdx, false);
       selScenario.value = state.scenarioId;
     } catch (err) { alert('Could not read session file: ' + err.message); }
@@ -1315,6 +1617,7 @@ document.getElementById('btn-reset').addEventListener('click', () => {
 ===================================================================== */
 renderCountries();
 renderPois();
+renderPoiEditor();
 renderSeaRoutes();
 // Sea routes default to hidden — user opts in via the View toggle.
 gSeaRoutes.style.display = state.showRoutes ? '' : 'none';
