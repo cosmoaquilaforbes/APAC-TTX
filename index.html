@@ -19,7 +19,9 @@
   body.presenting #sidebar { visibility: hidden; }
 
   #sidebar { background: #ffffff; border-right: 1px solid #e2dfd7;
-             overflow-y: auto; padding: 18px 18px 28px; display: flex; flex-direction: column; gap: 14px; }
+             overflow-y: auto; padding: 18px 18px 28px; display: flex; flex-direction: column; gap: 14px;
+             position: relative; }
+  #btn-present { position: absolute; top: 14px; right: 14px; z-index: 5; }
   #map-wrap { position: relative; overflow: hidden; background: #dce7f0; }
 
   /* ---------- sidebar pieces ---------- */
@@ -66,20 +68,12 @@
 
   .ocean { fill: #dce7f0; }
   .country { fill: #ece8dd; stroke: #a8a095; stroke-width: 0.4; stroke-linejoin: round;
-             transition: fill .18s; }
-  .country:hover { fill: #dad4c3; }
+             transition: fill .18s, filter .15s; }
+  /* Filter-based hover: works for both unpainted countries and ones with an
+     inline fill (painted via the Live editor), because filter stacks on top
+     of any fill whereas a :hover fill rule gets overridden by inline styles. */
+  .country:hover { filter: brightness(0.94) saturate(1.35); }
   .country.selected-edit { stroke: #2b2b2b; stroke-width: 1.1; }
-
-  /* Sea lanes / trade routes layer (toggleable). */
-  .sea-route { fill: none; stroke: #1d4e89; stroke-width: 1.4;
-               stroke-dasharray: 3 2; stroke-linejoin: round; stroke-linecap: round;
-               opacity: .85; pointer-events: stroke; }
-  .sea-route.major { stroke: #b34a2e; stroke-width: 1.8; stroke-dasharray: 4 2.5; opacity: .9; }
-  .sea-route-label { font-size: 6.5px; fill: #1d4e89; font-weight: 600; pointer-events: none;
-                     text-anchor: middle; paint-order: stroke;
-                     stroke: rgba(255,255,255,.9); stroke-width: 1.6px;
-                     letter-spacing: 0.03em; }
-  .sea-route-label.major { fill: #8a3a22; }
 
   .country-label { font-size: 11px; fill: #2b2b2b; font-weight: 600; pointer-events: none;
                    text-anchor: middle; paint-order: stroke; stroke: rgba(255,255,255,.9); stroke-width: 2.2px;
@@ -94,10 +88,14 @@
   .poi-row { border: 1px solid #e2dfd7; border-radius: 5px; padding: 6px 7px; background: #fdfcf8;
              display: flex; flex-direction: column; gap: 4px; }
   .poi-row .r1 { display: flex; gap: 5px; align-items: center; }
-  .poi-row .r2 { display: flex; gap: 5px; align-items: center; font-size: 10px; text-transform: none;
-                 letter-spacing: normal; color: #64625c; }
-  .poi-row .r2 input { width: 64px; padding: 3px 5px; font-size: 11px; text-transform: none; letter-spacing: normal; }
-  .poi-row .r2 .coord-label { font-size: 10px; color: #8a857a; }
+  .poi-row .r2, .poi-row .r3 { display: flex; gap: 5px; align-items: center; font-size: 10px; text-transform: none;
+                 letter-spacing: normal; color: #64625c; flex-wrap: wrap; }
+  .poi-row .r2 input[type=number] { width: 64px; padding: 3px 5px; font-size: 11px; text-transform: none; letter-spacing: normal; }
+  .poi-row .coord-label { font-size: 10px; color: #8a857a; }
+  .poi-row .scale-input { flex: 1; min-width: 110px; accent-color: #3a6aa8; cursor: pointer; }
+  .poi-row .scale-display { font-variant-numeric: tabular-nums; font-size: 11px; color: #3a3a3a;
+                            min-width: 32px; text-align: right; }
+  .poi-row .scale-reset { font-size: 10px; color: #64625c; padding: 2px 5px; }
   .poi-row .preview { width: 20px; height: 20px; flex-shrink: 0; }
   .poi-row .preview svg { width: 100%; height: 100%; color: #2b2b2b; }
   .poi-row .name-input { flex: 1; font-size: 12px; padding: 4px 6px; text-transform: none; letter-spacing: normal; }
@@ -124,8 +122,12 @@
   .unit-row { border: 1px solid #e2dfd7; border-radius: 5px; padding: 6px 7px; background: #fdfcf8;
               display: flex; flex-direction: column; gap: 4px; }
   .unit-row .r1 { display: flex; gap: 5px; align-items: center; }
-  .unit-row .r2, .unit-row .r3 { display: flex; gap: 5px; align-items: center; font-size: 10px;
+  .unit-row .r2, .unit-row .r3, .unit-row .r4 { display: flex; gap: 5px; align-items: center; font-size: 10px;
                                   text-transform: none; letter-spacing: normal; color: #64625c; flex-wrap: wrap; }
+  .unit-row .scale-input { flex: 1; min-width: 110px; accent-color: #3a6aa8; cursor: pointer; }
+  .unit-row .scale-display { font-variant-numeric: tabular-nums; font-size: 11px; color: #3a3a3a;
+                             min-width: 32px; text-align: right; }
+  .unit-row .scale-reset { font-size: 10px; color: #64625c; padding: 2px 5px; }
   .unit-row input[type=text] { flex: 1; font-size: 12px; padding: 4px 6px; text-transform: none; letter-spacing: normal; }
   .unit-row input[type=number] { width: 64px; padding: 3px 5px; font-size: 11px; text-transform: none; letter-spacing: normal; }
   .unit-row input[type=color] { width: 26px; height: 22px; padding: 0; border-radius: 3px; cursor: pointer; }
@@ -194,6 +196,59 @@
                           display: flex; flex-direction: column; gap: 8px; }
   #detail .edit-fields label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #64625c; }
 
+  /* ---------- country info panel ----------
+     Sits in the same top-right slot as #detail but at a higher z-index so it
+     stacks on top of any open event card. Always scrollable internally so the
+     deep info dump never blows past the screen. */
+  #country-panel { position: absolute; right: 14px; top: 14px; width: 360px;
+                   max-height: calc(100% - 28px);
+                   background: #fff; border: 1px solid #cfcabd; border-radius: 6px;
+                   box-shadow: 0 6px 22px rgba(0,0,0,.18);
+                   padding: 14px 16px 16px; overflow-y: auto;
+                   display: none; z-index: 25; }
+  #country-panel.open { display: block; }
+  #country-panel .cp-close { position: absolute; top: 8px; right: 10px; background: none; border: none;
+                             font-size: 20px; line-height: 1; color: #64625c; cursor: pointer; }
+  #country-panel .cp-close:hover { color: #1f1f1f; }
+  #country-panel .cp-header { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; padding-right: 22px; }
+  #country-panel .cp-flag { width: 56px; height: 38px; flex-shrink: 0;
+                            border: 1px solid #d5d0c3; border-radius: 3px; overflow: hidden;
+                            display: flex; align-items: center; justify-content: center;
+                            background: #ece8dd; position: relative; }
+  #country-panel .cp-flag img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  #country-panel .cp-flag .cp-flag-fallback { width: 100%; height: 100%;
+                                              display: flex; align-items: center; justify-content: center;
+                                              font-size: 10px; color: #8a857a; letter-spacing: .08em;
+                                              text-align: center; padding: 2px; }
+  #country-panel .cp-flag .cp-flag-swatch { position: absolute; inset: 0; }
+  #country-panel .cp-title { flex: 1; min-width: 0; }
+  #country-panel h3 { margin: 0 0 2px; font-size: 17px; font-weight: 600; }
+  #country-panel .cp-iso { font-size: 10px; text-transform: uppercase; letter-spacing: .12em; color: #8a857a; }
+  #country-panel .cp-section { margin: 10px 0 0; padding-top: 8px; border-top: 1px dashed #e2dfd7; }
+  #country-panel .cp-section:first-of-type { border-top: none; padding-top: 0; }
+  #country-panel .cp-section h4 { margin: 0 0 6px; font-size: 11px; text-transform: uppercase;
+                                  letter-spacing: .1em; color: #64625c; font-weight: 600; }
+  #country-panel .cp-field { display: grid; grid-template-columns: 108px 1fr; gap: 4px 10px;
+                             font-size: 12.5px; line-height: 1.45; margin-bottom: 4px; }
+  #country-panel .cp-field .cp-label { color: #64625c; font-size: 11px; padding-top: 2px; }
+  #country-panel .cp-field .cp-value { color: #1f1f1f; word-break: break-word; }
+  #country-panel .cp-field .cp-value.placeholder { color: #b3ae9f; font-style: italic; }
+  #country-panel input[type=text], #country-panel textarea {
+    width: 100%; font: inherit; font-size: 12.5px; padding: 4px 6px;
+    border: 1px solid #d5d0c3; border-radius: 3px; background: #fdfcf8;
+    text-transform: none; letter-spacing: normal; color: #1f1f1f;
+  }
+  #country-panel textarea { min-height: 60px; resize: vertical; line-height: 1.4; }
+  #country-panel .cp-notes { font-size: 12.5px; line-height: 1.5; white-space: pre-wrap;
+                             color: #1f1f1f; background: #fbf9f2; border: 1px solid #ecead9;
+                             border-radius: 4px; padding: 7px 9px; }
+  #country-panel .cp-notes.placeholder { color: #b3ae9f; font-style: italic; background: #fdfcf8; }
+  #country-panel .cp-edit-badge { display: inline-block; font-size: 10px; text-transform: uppercase;
+                                  letter-spacing: .1em; color: #1e4fa8; background: #e8efff;
+                                  padding: 2px 6px; border-radius: 3px; margin-top: 4px; }
+  #country-panel .cp-footer-note { font-size: 10px; color: #8a857a; margin-top: 12px;
+                                   border-top: 1px dashed #e2dfd7; padding-top: 6px; line-height: 1.4; }
+
   /* Image picker inside the event editor. */
   .image-input-row { display: flex; gap: 6px; align-items: stretch; }
   .image-input-row input[type=text] { flex: 1; min-width: 0; }
@@ -217,6 +272,7 @@
 
 <div id="app">
   <aside id="sidebar">
+    <button class="btn" id="btn-present">Hide</button>
     <div class="brand">Tabletop Wargame</div>
     <h1 class="title">Asia Pacific Visualiser</h1>
 
@@ -253,57 +309,61 @@
 
     <h2>View</h2>
     <div class="btn-row">
-      <button class="btn" id="btn-present">Presentation mode</button>
       <button class="btn" id="btn-toggle-pois">Hide POIs</button>
       <button class="btn" id="btn-toggle-events">Hide events</button>
       <button class="btn" id="btn-toggle-units">Hide units</button>
+    </div>
+    <div class="btn-row">
       <button class="btn" id="btn-toggle-labels">Hide country labels</button>
       <button class="btn" id="btn-toggle-pinlabels">Show all pin labels</button>
-      <button class="btn" id="btn-toggle-routes">Show sea routes</button>
     </div>
 
-    <details class="panel" id="poi-editor-panel">
-      <summary>POIs</summary>
-      <div id="poi-list"></div>
-      <div class="btn-row" style="margin-top:6px;">
-        <button class="btn" id="btn-poi-add-centre">+ Add at view centre</button>
-        <button class="btn" id="btn-poi-add-click">+ Click on map</button>
-      </div>
-    </details>
+    <details class="panel" id="editors-group">
+      <summary>Editor</summary>
 
-    <details class="panel" id="unit-editor-panel">
-      <summary>NATO units</summary>
-      <div id="unit-list"></div>
-      <div class="btn-row" style="margin-top:6px;">
-        <button class="btn" id="btn-unit-add-centre">+ Add at view centre</button>
-        <button class="btn" id="btn-unit-add-click">+ Click on map</button>
-      </div>
-    </details>
+      <details class="panel" id="poi-editor-panel">
+        <summary>POIs editor</summary>
+        <div id="poi-list"></div>
+        <div class="btn-row" style="margin-top:6px;">
+          <button class="btn" id="btn-poi-add-centre">+ Add at view centre</button>
+          <button class="btn" id="btn-poi-add-click">+ Click on map</button>
+        </div>
+      </details>
 
-    <details class="panel" id="editor-panel">
-      <summary>Live editor</summary>
+      <details class="panel" id="unit-editor-panel">
+        <summary>Units editor</summary>
+        <div id="unit-list"></div>
+        <div class="btn-row" style="margin-top:6px;">
+          <button class="btn" id="btn-unit-add-centre">+ Add at view centre</button>
+          <button class="btn" id="btn-unit-add-click">+ Click on map</button>
+        </div>
+      </details>
 
-      <div class="btn-row">
-        <button class="btn" id="mode-paint">Paint country</button>
-        <button class="btn" id="mode-erase">Erase highlight</button>
-        <button class="btn" id="mode-pin">Drop pin</button>
-        <button class="btn" id="mode-poi-add">Add POI</button>
-        <button class="btn" id="mode-poi-remove">Remove POI</button>
-        <button class="btn" id="mode-unit-add">Add unit</button>
-      </div>
-      <label class="field">
-        Paint colour
-        <input type="color" id="paint-color" value="#6b9bd1">
-      </label>
-      <p class="mode-hint" id="mode-hint">Click a mode above, then click the map.</p>
+      <details class="panel" id="editor-panel">
+        <summary>Live editor</summary>
 
-      <h2 style="margin-top:10px">Session</h2>
-      <div class="btn-row">
-        <button class="btn" id="btn-export">Export JSON</button>
-        <button class="btn" id="btn-import">Import JSON</button>
-        <button class="btn" id="btn-reset">Reset scenario</button>
-      </div>
-      <input type="file" id="file-import" accept=".json" class="hidden">
+        <div class="btn-row">
+          <button class="btn" id="mode-paint">Paint country</button>
+          <button class="btn" id="mode-erase">Erase highlight</button>
+          <button class="btn" id="mode-pin">Drop pin</button>
+          <button class="btn" id="mode-poi-add">Add POI</button>
+          <button class="btn" id="mode-poi-remove">Remove POI</button>
+          <button class="btn" id="mode-unit-add">Add unit</button>
+        </div>
+        <label class="field">
+          Paint colour
+          <input type="color" id="paint-color" value="#6b9bd1">
+        </label>
+        <p class="mode-hint" id="mode-hint">Click a mode above, then click the map.</p>
+
+        <h2 style="margin-top:10px">Session</h2>
+        <div class="btn-row">
+          <button class="btn" id="btn-export">Export JSON</button>
+          <button class="btn" id="btn-import">Import JSON</button>
+          <button class="btn" id="btn-reset">Reset scenario</button>
+        </div>
+        <input type="file" id="file-import" accept=".json" class="hidden">
+      </details>
     </details>
 
     <p style="font-size:11px;color:#8a857a;margin-top:auto;">
@@ -512,8 +572,6 @@
         <g id="viewport">
           <g id="g-countries"></g>
           <g id="g-country-labels"></g>
-          <g id="g-sea-routes"></g>
-          <g id="g-sea-route-labels"></g>
           <g id="g-pois"></g>
           <g id="g-poi-labels"></g>
           <g id="g-units"></g>
@@ -575,6 +633,24 @@
         </div>
       </div>
     </div>
+
+    <!-- Country info panel: opens when a country is clicked in view mode.
+         Sits at a higher z-index than #detail so it overlays any event card. -->
+    <div id="country-panel" role="dialog" aria-label="Country information">
+      <button class="cp-close" id="cp-close" title="Close">&times;</button>
+      <div class="cp-header">
+        <div class="cp-flag" id="cp-flag"></div>
+        <div class="cp-title">
+          <h3 id="cp-name"></h3>
+          <div class="cp-iso" id="cp-iso"></div>
+          <div class="cp-edit-badge hidden" id="cp-edit-badge">Editing &mdash; live editor open</div>
+        </div>
+      </div>
+      <div id="cp-body"></div>
+      <div class="cp-footer-note">
+        Tip: drop a flag image at <code>assets/flags/&lt;ISO&gt;.svg</code> (or .png) next to this HTML to replace the colour swatch.
+      </div>
+    </div>
   </main>
 </div>
 
@@ -619,7 +695,8 @@ window.SCENARIOS_DATA = {
     { id: "MAT",  name: "Matsu",             coord: [119.95, 26.15] },
     { id: "KAO",  name: "Kaohsiung",         coord: [120.30, 22.63] },
     { id: "DRW",  name: "Darwin",            coord: [130.85,-12.46] },
-    { id: "PER",  name: "Perth (HMAS Stirling)", coord: [115.76,-32.23] }
+    { id: "PER",  name: "Perth (HMAS Stirling)", coord: [115.76,-32.23] },
+    { id: "HNL",  name: "Honolulu",           coord: [202.14, 21.31] }
   ],
 
   scenarios: [
@@ -763,7 +840,13 @@ window.IMAGES = {
    its longitudes shifted into the 180..210 range.
 ===================================================================== */
 const MAP_W = 1500, MAP_H = 800;
-const LON_MIN = 60, LON_MAX = 210;
+// Longitude padded ~10% past the core APAC area (primarily east-ward)
+// so Alaska and Hawaii — shifted east of the dateline into the
+// 180..220 range — sit inside the viewBox rather than at its edge.
+// Latitude kept at the original clip bounds of the embedded GeoJSON:
+// Russia's Arctic coast was pre-clipped at lat=65, so any LAT_MAX
+// above 65 would just add an ugly strip of ocean above the land.
+const LON_MIN = 52, LON_MAX = 218;
 const LAT_MIN = -15, LAT_MAX = 65;
 const project = ([lon, lat]) => [
   (lon - LON_MIN) / (LON_MAX - LON_MIN) * MAP_W,
@@ -777,8 +860,6 @@ const svg = document.getElementById('map');
 const viewport = document.getElementById('viewport');
 const gCountries = document.getElementById('g-countries');
 const gCountryLabels = document.getElementById('g-country-labels');
-const gSeaRoutes = document.getElementById('g-sea-routes');
-const gSeaRouteLabels = document.getElementById('g-sea-route-labels');
 const gPois = document.getElementById('g-pois');
 const gPoiLabels = document.getElementById('g-poi-labels');
 const gPins = document.getElementById('g-pins');
@@ -864,6 +945,13 @@ const POI_ICONS = [
 const POI_ICON_KEYS = new Set(POI_ICONS.map(i => i.key));
 const POI_ICON_SIZE = 5.5; // map units; icons are drawn centred on POI coord
 const POI_DOT_R = 1.0;
+const POI_SCALE_MIN = 0.5;
+const POI_SCALE_MAX = 3.0;
+function clampPoiScale(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return 1.0;
+  return Math.max(POI_SCALE_MIN, Math.min(POI_SCALE_MAX, n));
+}
 
 function renderPois() {
   gPois.innerHTML = '';
@@ -872,18 +960,20 @@ function renderPois() {
   for (const p of pts) {
     const [x, y] = project(p.coord);
     const iconKey = (p.icon && POI_ICON_KEYS.has(p.icon)) ? p.icon : 'dot';
+    const s = clampPoiScale(p.scale);
     let el;
     if (iconKey === 'dot') {
       el = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      el.setAttribute('cx', x); el.setAttribute('cy', y); el.setAttribute('r', POI_DOT_R);
+      el.setAttribute('cx', x); el.setAttribute('cy', y); el.setAttribute('r', POI_DOT_R * s);
       el.setAttribute('class', 'poi');
     } else {
+      const size = POI_ICON_SIZE * s;
       el = document.createElementNS('http://www.w3.org/2000/svg', 'use');
       el.setAttribute('href', '#poi-' + iconKey);
-      el.setAttribute('x', x - POI_ICON_SIZE / 2);
-      el.setAttribute('y', y - POI_ICON_SIZE / 2);
-      el.setAttribute('width',  POI_ICON_SIZE);
-      el.setAttribute('height', POI_ICON_SIZE);
+      el.setAttribute('x', x - size / 2);
+      el.setAttribute('y', y - size / 2);
+      el.setAttribute('width',  size);
+      el.setAttribute('height', size);
       el.setAttribute('class', 'poi poi-icon');
     }
     el.dataset.poiId = p.id;
@@ -891,10 +981,11 @@ function renderPois() {
     title.textContent = p.name;
     el.appendChild(title);
     gPois.appendChild(el);
-    const labelOffset = iconKey === 'dot' ? 1.6 : (POI_ICON_SIZE / 2 + 0.6);
+    const labelOffset = iconKey === 'dot' ? (1.6 * s) : (POI_ICON_SIZE * s / 2 + 0.6);
     const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    t.setAttribute('x', x + labelOffset); t.setAttribute('y', y + 1.0);
+    t.setAttribute('x', x + labelOffset); t.setAttribute('y', y + 1.0 * s);
     t.setAttribute('class', 'poi-label');
+    t.setAttribute('font-size', 3.2 * s);
     t.dataset.poiId = p.id;
     t.textContent = p.name;
     gPoiLabels.appendChild(t);
@@ -921,6 +1012,7 @@ function renderPoiEditor() {
     ).join('');
     const lon = (p.coord && typeof p.coord[0] === 'number') ? p.coord[0].toFixed(2) : '';
     const lat = (p.coord && typeof p.coord[1] === 'number') ? p.coord[1].toFixed(2) : '';
+    const scale = clampPoiScale(p.scale);
     return '<div class="poi-row" data-idx="' + i + '">'
          +   '<div class="r1">'
          +     '<span class="preview">' + iconPreviewHtml(iconKey) + '</span>'
@@ -935,6 +1027,12 @@ function renderPoiEditor() {
          +     '<input type="number" step="0.01" class="lat-input" value="' + lat + '">'
          +     '<button class="row-btn centre-btn" title="Centre map on POI">Centre</button>'
          +   '</div>'
+         +   '<div class="r3">'
+         +     '<span class="coord-label">scale</span>'
+         +     '<input type="range" class="scale-input" min="' + POI_SCALE_MIN + '" max="' + POI_SCALE_MAX + '" step="0.1" value="' + scale + '">'
+         +     '<span class="scale-display">' + scale.toFixed(1) + '&times;</span>'
+         +     '<button class="row-btn scale-reset" title="Reset scale to 1&times;">reset</button>'
+         +   '</div>'
          + '</div>';
   });
   container.innerHTML = rows.join('');
@@ -943,6 +1041,313 @@ function getPoiByIdx(i) {
   const pts = (window.SCENARIOS_DATA && window.SCENARIOS_DATA.points) || [];
   return pts[i];
 }
+
+/* =====================================================================
+   COUNTRY INFO PANEL
+   Clicking a country in view mode pops up a briefing card in the top-right.
+   Data is ballpark figures for TTX prep; edit them in the live editor and
+   overrides persist in the session JSON. All values are plain strings so
+   users can format populations/currency however they like.
+===================================================================== */
+const COUNTRY_INFO_FIELDS = [
+  // section: basics
+  { key: 'capital',    label: 'Capital',        section: 'basics' },
+  { key: 'population', label: 'Population',     section: 'basics' },
+  { key: 'gdp',        label: 'GDP (nominal)',  section: 'basics' },
+  { key: 'area',       label: 'Land area',      section: 'basics' },
+  // section: defence
+  { key: 'militaryActive',  label: 'Active military', section: 'defence' },
+  { key: 'militaryReserve', label: 'Reserves',        section: 'defence' },
+  { key: 'defenceBudget',   label: 'Defence budget',  section: 'defence' },
+  // section: economy
+  { key: 'currency',   label: 'Currency',       section: 'economy' },
+  { key: 'industries', label: 'Key industries', section: 'economy', multiline: true },
+  { key: 'exports',    label: 'Major exports',  section: 'economy', multiline: true }
+];
+const COUNTRY_INFO_SECTIONS = [
+  { key: 'basics',  label: 'Basics' },
+  { key: 'defence', label: 'Defence' },
+  { key: 'economy', label: 'Economy' }
+];
+
+/* Ballpark figures rounded for TTX use. Users can edit live; these are the
+   fallbacks shown the first time a country panel opens. */
+const COUNTRY_INFO_DEFAULTS = {
+  CHN: { capital: 'Beijing', population: '1.41 billion', gdp: '$17.8T', area: '9.60M km²',
+         militaryActive: '2,035,000', militaryReserve: '510,000', defenceBudget: '~$230B (2024)',
+         currency: 'Renminbi (CNY)', industries: 'Manufacturing, electronics, steel, shipbuilding, aerospace, chemicals',
+         exports: 'Electronics, machinery, textiles, vehicles, pharmaceuticals' },
+  JPN: { capital: 'Tokyo', population: '124 million', gdp: '$4.2T', area: '378,000 km²',
+         militaryActive: '247,000 (JSDF)', militaryReserve: '56,000', defenceBudget: '~$50B (2024)',
+         currency: 'Yen (JPY)', industries: 'Automotive, electronics, robotics, machine tools, semiconductors',
+         exports: 'Vehicles, machinery, electronics, optical instruments, steel' },
+  KOR: { capital: 'Seoul', population: '51.7 million', gdp: '$1.71T', area: '100,000 km²',
+         militaryActive: '555,000 (ROKAF)', militaryReserve: '3,100,000', defenceBudget: '~$46B (2024)',
+         currency: 'Won (KRW)', industries: 'Semiconductors, shipbuilding, automotive, steel, petrochemicals',
+         exports: 'Semiconductors, vehicles, ships, refined petroleum, displays' },
+  PRK: { capital: 'Pyongyang', population: '26 million', gdp: '$18B (est.)', area: '120,500 km²',
+         militaryActive: '1,280,000 (KPA)', militaryReserve: '600,000', defenceBudget: 'Not published',
+         currency: 'North Korean Won (KPW)', industries: 'Military, mining, metallurgy, textiles',
+         exports: 'Coal, minerals, textiles (sanctioned)' },
+  TWN: { capital: 'Taipei', population: '23.6 million', gdp: '$790B', area: '36,000 km²',
+         militaryActive: '169,000 (ROCA)', militaryReserve: '1,650,000', defenceBudget: '~$19B (2024)',
+         currency: 'New Taiwan Dollar (TWD)', industries: 'Semiconductors, electronics, petrochemicals, machinery',
+         exports: 'Integrated circuits, machinery, plastics, steel, optical instruments' },
+  PHL: { capital: 'Manila', population: '117 million', gdp: '$470B', area: '300,000 km²',
+         militaryActive: '143,000 (AFP)', militaryReserve: '131,000', defenceBudget: '~$4.8B',
+         currency: 'Peso (PHP)', industries: 'Electronics assembly, BPO, shipbuilding, mining, agriculture',
+         exports: 'Electronics, machinery, transport equipment, coconut oil' },
+  VNM: { capital: 'Hanoi', population: '100 million', gdp: '$430B', area: '331,000 km²',
+         militaryActive: '482,000 (PAVN)', militaryReserve: '5,000,000', defenceBudget: '~$7B',
+         currency: 'Dong (VND)', industries: 'Electronics, textiles, footwear, agriculture, seafood',
+         exports: 'Electronics, textiles, footwear, seafood, rice, coffee' },
+  IDN: { capital: 'Jakarta (Nusantara transitioning)', population: '280 million', gdp: '$1.37T', area: '1.90M km²',
+         militaryActive: '400,000 (TNI)', militaryReserve: '400,000', defenceBudget: '~$9B',
+         currency: 'Rupiah (IDR)', industries: 'Petroleum, natural gas, palm oil, mining, textiles',
+         exports: 'Coal, palm oil, natural gas, vehicles, nickel' },
+  MYS: { capital: 'Kuala Lumpur', population: '34 million', gdp: '$430B', area: '330,000 km²',
+         militaryActive: '110,000 (ATM)', militaryReserve: '310,000', defenceBudget: '~$4B',
+         currency: 'Ringgit (MYR)', industries: 'Electronics, palm oil, natural gas, petroleum, rubber',
+         exports: 'Electronics, palm oil, petroleum, natural gas' },
+  THA: { capital: 'Bangkok', population: '71 million', gdp: '$515B', area: '513,000 km²',
+         militaryActive: '361,000 (RTA)', militaryReserve: '200,000', defenceBudget: '~$5.7B',
+         currency: 'Baht (THB)', industries: 'Automotive, electronics, tourism, rice, rubber',
+         exports: 'Machinery, vehicles, electronics, rice, seafood' },
+  SGP: { capital: 'Singapore', population: '5.9 million', gdp: '$500B', area: '735 km²',
+         militaryActive: '72,500 (SAF)', militaryReserve: '310,000', defenceBudget: '~$13B',
+         currency: 'Singapore Dollar (SGD)', industries: 'Finance, biotech, electronics, shipping, petrochemicals',
+         exports: 'Integrated circuits, refined petroleum, gold, machinery' },
+  MMR: { capital: 'Naypyidaw', population: '54 million', gdp: '$65B', area: '677,000 km²',
+         militaryActive: '350,000 (Tatmadaw)', militaryReserve: '0', defenceBudget: '~$2B (est.)',
+         currency: 'Kyat (MMK)', industries: 'Natural gas, jade, timber, textiles, agriculture',
+         exports: 'Natural gas, pulses, textiles, jade, fish' },
+  KHM: { capital: 'Phnom Penh', population: '17 million', gdp: '$32B', area: '181,000 km²',
+         militaryActive: '124,000 (RCAF)', militaryReserve: '200,000', defenceBudget: '~$0.7B',
+         currency: 'Riel (KHR)', industries: 'Garments, tourism, agriculture, construction',
+         exports: 'Textiles, footwear, rice, rubber' },
+  LAO: { capital: 'Vientiane', population: '7.7 million', gdp: '$15B', area: '237,000 km²',
+         militaryActive: '29,000 (LPA)', militaryReserve: '100,000', defenceBudget: '~$20M',
+         currency: 'Kip (LAK)', industries: 'Hydropower, mining, agriculture, tourism',
+         exports: 'Electricity, copper, gold, coffee, timber' },
+  BRN: { capital: 'Bandar Seri Begawan', population: '450,000', gdp: '$17B', area: '5,765 km²',
+         militaryActive: '7,200 (RBAF)', militaryReserve: '700', defenceBudget: '~$0.4B',
+         currency: 'Brunei Dollar (BND)', industries: 'Petroleum, natural gas, construction',
+         exports: 'Crude oil, natural gas, petrochemicals' },
+  IND: { capital: 'New Delhi', population: '1.43 billion', gdp: '$3.9T', area: '3.29M km²',
+         militaryActive: '1,455,000 (IAF)', militaryReserve: '1,155,000', defenceBudget: '~$74B',
+         currency: 'Rupee (INR)', industries: 'IT services, pharmaceuticals, textiles, automotive, steel',
+         exports: 'Refined petroleum, diamonds, pharmaceuticals, rice, vehicles' },
+  PAK: { capital: 'Islamabad', population: '240 million', gdp: '$375B', area: '882,000 km²',
+         militaryActive: '654,000', militaryReserve: '550,000', defenceBudget: '~$10B',
+         currency: 'Pakistani Rupee (PKR)', industries: 'Textiles, agriculture, cement, steel',
+         exports: 'Textiles, rice, leather goods, cotton' },
+  LKA: { capital: 'Colombo (exec.) / Sri Jayawardenepura Kotte', population: '22 million', gdp: '$85B', area: '65,600 km²',
+         militaryActive: '255,000', militaryReserve: '30,000', defenceBudget: '~$1.4B',
+         currency: 'Sri Lankan Rupee (LKR)', industries: 'Tea, textiles, tourism, apparel',
+         exports: 'Apparel, tea, rubber, spices' },
+  BGD: { capital: 'Dhaka', population: '170 million', gdp: '$460B', area: '148,000 km²',
+         militaryActive: '163,000', militaryReserve: '0', defenceBudget: '~$4.5B',
+         currency: 'Taka (BDT)', industries: 'Textiles, garments, jute, leather, shipbuilding',
+         exports: 'Garments, textiles, jute, leather' },
+  NPL: { capital: 'Kathmandu', population: '30 million', gdp: '$42B', area: '147,000 km²',
+         militaryActive: '96,000', militaryReserve: '0', defenceBudget: '~$0.45B',
+         currency: 'Nepalese Rupee (NPR)', industries: 'Tourism, agriculture, carpets, remittances',
+         exports: 'Clothing, carpets, pashmina, tea' },
+  BTN: { capital: 'Thimphu', population: '780,000', gdp: '$2.7B', area: '38,400 km²',
+         militaryActive: '7,000', militaryReserve: '0', defenceBudget: '~$0.03B',
+         currency: 'Ngultrum (BTN)', industries: 'Hydropower, tourism, agriculture, forestry',
+         exports: 'Electricity, ferrosilicon, cement, cardamom' },
+  AFG: { capital: 'Kabul', population: '42 million', gdp: '$15B (est.)', area: '652,000 km²',
+         militaryActive: 'Restructured under IEA', militaryReserve: 'Unknown', defenceBudget: 'Not published',
+         currency: 'Afghani (AFN)', industries: 'Agriculture, mining, carpets, opium',
+         exports: 'Fruits, carpets, cotton, minerals' },
+  AUS: { capital: 'Canberra', population: '26.6 million', gdp: '$1.72T', area: '7.69M km²',
+         militaryActive: '58,000 (ADF)', militaryReserve: '32,000', defenceBudget: '~$35B (AUKUS aligned)',
+         currency: 'Australian Dollar (AUD)', industries: 'Mining, finance, agriculture, tourism, manufacturing',
+         exports: 'Iron ore, coal, natural gas, gold, beef, wheat' },
+  NZL: { capital: 'Wellington', population: '5.2 million', gdp: '$260B', area: '268,000 km²',
+         militaryActive: '9,200 (NZDF)', militaryReserve: '2,300', defenceBudget: '~$3.5B',
+         currency: 'NZ Dollar (NZD)', industries: 'Dairy, meat, wood, tourism, wine',
+         exports: 'Dairy, meat, wood, wool, fruit' },
+  PNG: { capital: 'Port Moresby', population: '10.5 million', gdp: '$31B', area: '463,000 km²',
+         militaryActive: '3,600 (PNGDF)', militaryReserve: '0', defenceBudget: '~$0.1B',
+         currency: 'Kina (PGK)', industries: 'Mining, natural gas, palm oil, coffee, copra',
+         exports: 'Natural gas, gold, copper, palm oil, coffee' },
+  USA: { capital: 'Washington, D.C.', population: '335 million', gdp: '$27.4T', area: '9.83M km²',
+         militaryActive: '1,330,000', militaryReserve: '778,000', defenceBudget: '~$841B (FY24)',
+         currency: 'US Dollar (USD)', industries: 'Services, aerospace, IT, pharmaceuticals, defence, energy',
+         exports: 'Machinery, aircraft, electronics, pharmaceuticals, oil & gas' },
+  RUS: { capital: 'Moscow', population: '144 million', gdp: '$2.0T', area: '17.1M km²',
+         militaryActive: '1,320,000', militaryReserve: '2,000,000', defenceBudget: '~$109B (2024)',
+         currency: 'Ruble (RUB)', industries: 'Oil & gas, mining, metals, defence, agriculture',
+         exports: 'Crude oil, natural gas, refined petroleum, wheat, metals' },
+  MNG: { capital: 'Ulaanbaatar', population: '3.4 million', gdp: '$19B', area: '1.56M km²',
+         militaryActive: '9,700', militaryReserve: '137,000', defenceBudget: '~$0.1B',
+         currency: 'Tögrög (MNT)', industries: 'Mining, livestock, cashmere, coal',
+         exports: 'Coal, copper, gold, cashmere' },
+  TLS: { capital: 'Dili', population: '1.35 million', gdp: '$2B', area: '14,870 km²',
+         militaryActive: '2,000 (F-FDTL)', militaryReserve: '0', defenceBudget: '~$0.03B',
+         currency: 'US Dollar (USD)', industries: 'Oil & gas, coffee, agriculture',
+         exports: 'Oil, coffee, sandalwood' }
+};
+
+/* Merge defaults + overrides. Overrides win per-field so users can keep the
+   canned figures they like and just change specific lines. */
+function getCountryInfo(iso) {
+  const base = COUNTRY_INFO_DEFAULTS[iso] || {};
+  const over = state.countryInfo[iso] || {};
+  const merged = {};
+  for (const f of COUNTRY_INFO_FIELDS) merged[f.key] = (f.key in over) ? over[f.key] : (base[f.key] || '');
+  merged.notes = (over.notes != null) ? over.notes : '';
+  return merged;
+}
+
+function isLiveEditorOpen() {
+  const ep = document.getElementById('editor-panel');
+  return !!(ep && ep.open);
+}
+
+const cpEl        = document.getElementById('country-panel');
+const cpFlagEl    = document.getElementById('cp-flag');
+const cpNameEl    = document.getElementById('cp-name');
+const cpIsoEl     = document.getElementById('cp-iso');
+const cpBodyEl    = document.getElementById('cp-body');
+const cpEditBadge = document.getElementById('cp-edit-badge');
+
+function openCountryPanel(iso) {
+  state.openCountryIso = iso;
+  renderCountryPanel();
+  cpEl.classList.add('open');
+}
+function closeCountryPanel() {
+  state.openCountryIso = null;
+  cpEl.classList.remove('open');
+}
+
+function countryNameFor(iso) {
+  const el = countryEls[iso];
+  return (el && el.getAttribute('data-name')) || iso;
+}
+
+function renderCountryPanel() {
+  const iso = state.openCountryIso;
+  if (!iso) return;
+  const info = getCountryInfo(iso);
+  const name = countryNameFor(iso);
+  const editing = isLiveEditorOpen();
+
+  cpNameEl.textContent = name;
+  cpIsoEl.textContent = iso;
+  cpEditBadge.classList.toggle('hidden', !editing);
+
+  // Flag: try image file first; fall back to painted colour swatch.
+  cpFlagEl.innerHTML = '';
+  const img = document.createElement('img');
+  img.alt = name + ' flag';
+  img.src = 'assets/flags/' + iso + '.svg';
+  img.onerror = () => {
+    // Try .png next; if that also fails show the swatch / placeholder.
+    if (img.dataset.triedPng) {
+      cpFlagEl.innerHTML = '';
+      const swatchColor = state.highlights[iso] || '#ece8dd';
+      const sw = document.createElement('div');
+      sw.className = 'cp-flag-swatch';
+      sw.style.background = swatchColor;
+      const label = document.createElement('div');
+      label.className = 'cp-flag-fallback';
+      label.textContent = iso;
+      label.style.position = 'relative';
+      label.style.zIndex = '1';
+      label.style.textShadow = '0 0 2px rgba(255,255,255,.9)';
+      cpFlagEl.appendChild(sw);
+      cpFlagEl.appendChild(label);
+      return;
+    }
+    img.dataset.triedPng = '1';
+    img.src = 'assets/flags/' + iso + '.png';
+  };
+  cpFlagEl.appendChild(img);
+
+  // Body: sections of fields + notes block at the end.
+  const frag = document.createDocumentFragment();
+  for (const sec of COUNTRY_INFO_SECTIONS) {
+    const fields = COUNTRY_INFO_FIELDS.filter(f => f.section === sec.key);
+    const section = document.createElement('div');
+    section.className = 'cp-section';
+    const h = document.createElement('h4'); h.textContent = sec.label;
+    section.appendChild(h);
+    for (const f of fields) {
+      const row = document.createElement('div'); row.className = 'cp-field';
+      const lbl = document.createElement('div'); lbl.className = 'cp-label'; lbl.textContent = f.label;
+      const val = document.createElement('div'); val.className = 'cp-value';
+      if (editing) {
+        const input = f.multiline ? document.createElement('textarea') : document.createElement('input');
+        if (!f.multiline) input.type = 'text';
+        input.value = info[f.key] || '';
+        input.dataset.field = f.key;
+        input.placeholder = '—';
+        val.appendChild(input);
+      } else {
+        if (info[f.key]) { val.textContent = info[f.key]; }
+        else { val.textContent = '—'; val.classList.add('placeholder'); }
+      }
+      row.appendChild(lbl); row.appendChild(val);
+      section.appendChild(row);
+    }
+    frag.appendChild(section);
+  }
+
+  // Notes block (always present, full-width).
+  const notesSec = document.createElement('div');
+  notesSec.className = 'cp-section';
+  const notesH = document.createElement('h4'); notesH.textContent = 'Notes';
+  notesSec.appendChild(notesH);
+  if (editing) {
+    const ta = document.createElement('textarea');
+    ta.value = info.notes || '';
+    ta.placeholder = 'Scenario-specific commentary, alliances, recent events…';
+    ta.dataset.field = 'notes';
+    ta.style.minHeight = '80px';
+    notesSec.appendChild(ta);
+  } else {
+    const notes = document.createElement('div');
+    notes.className = 'cp-notes';
+    if (info.notes) notes.textContent = info.notes;
+    else { notes.textContent = 'No notes yet.'; notes.classList.add('placeholder'); }
+    notesSec.appendChild(notes);
+  }
+  frag.appendChild(notesSec);
+
+  cpBodyEl.innerHTML = '';
+  cpBodyEl.appendChild(frag);
+}
+
+/* Live editing: typing in any panel input writes straight to the override
+   map. We only store a field when it differs from the default so the export
+   JSON stays compact. */
+cpBodyEl.addEventListener('input', (e) => {
+  const iso = state.openCountryIso;
+  if (!iso) return;
+  const field = e.target.dataset.field;
+  if (!field) return;
+  const value = e.target.value;
+  const defaults = COUNTRY_INFO_DEFAULTS[iso] || {};
+  if (!state.countryInfo[iso]) state.countryInfo[iso] = {};
+  // Store the edit even when it equals the default — allows an explicit
+  // "cleared" state. Empty strings are allowed.
+  state.countryInfo[iso][field] = value;
+  // Defaults-equal pruning: if user types something back to the baseline,
+  // drop that field to keep exports tidy.
+  if (field !== 'notes' && value === (defaults[field] || '')) {
+    delete state.countryInfo[iso][field];
+  }
+  if (Object.keys(state.countryInfo[iso]).length === 0) delete state.countryInfo[iso];
+});
+
+document.getElementById('cp-close').addEventListener('click', () => closeCountryPanel());
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && state.openCountryIso) closeCountryPanel();
+});
 
 /* =====================================================================
    NATO UNIT SYMBOLS
@@ -958,6 +1363,13 @@ const gUnitLabels  = document.getElementById('g-unit-labels');
    coord, so half-widths matter. */
 const UNIT_FRAME_W = 14;
 const UNIT_FRAME_H = 9;
+const UNIT_SCALE_MIN = 0.5;
+const UNIT_SCALE_MAX = 3.0;
+function clampUnitScale(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return 1.0;
+  return Math.max(UNIT_SCALE_MIN, Math.min(UNIT_SCALE_MAX, n));
+}
 
 const UNIT_AFFILIATIONS = [
   { key: 'friendly', label: 'Friendly', stroke: '#1e4fa8', fill: '#cfe0f4' },
@@ -1075,10 +1487,11 @@ function renderUnits() {
     const branchKey = UNIT_BRANCH_KEYS.has(u.branch) ? u.branch : 'none';
     const echelonKey = UNIT_ECHELON_MAP[u.echelon] ? u.echelon : 'none';
     const { stroke, fill, branch } = unitColors(u);
+    const s = clampUnitScale(u.scale);
 
     const g = document.createElementNS(SVGNS, 'g');
     g.setAttribute('class', 'unit');
-    g.setAttribute('transform', `translate(${x} ${y})`);
+    g.setAttribute('transform', `translate(${x} ${y}) scale(${s})`);
     g.dataset.unitId = u.id;
 
     const frame = document.createElementNS(SVGNS, 'path');
@@ -1122,9 +1535,11 @@ function renderUnits() {
 
     if (u.label) {
       const t = document.createElementNS(SVGNS, 'text');
-      t.setAttribute('x', x + hw + 0.8);
-      t.setAttribute('y', y + 1.0);
+      // Label offset scales with the unit so it always sits just past the frame edge.
+      t.setAttribute('x', x + hw * s + 0.8);
+      t.setAttribute('y', y + 1.0 * s);
       t.setAttribute('class', 'unit-label');
+      t.setAttribute('font-size', 3.0 * s);
       t.dataset.unitId = u.id;
       t.textContent = u.label;
       gUnitLabels.appendChild(t);
@@ -1174,6 +1589,7 @@ function renderUnitEditor() {
     const lon = (u.coord && Number.isFinite(u.coord[0])) ? u.coord[0].toFixed(2) : '';
     const lat = (u.coord && Number.isFinite(u.coord[1])) ? u.coord[1].toFixed(2) : '';
     const customCol = u.color || UNIT_AFF_MAP[aff].stroke;
+    const scale = clampUnitScale(u.scale);
     return `<div class="unit-row" data-idx="${i}">
       <div class="r1">
         <span class="preview">${unitPreviewHtml(u)}</span>
@@ -1195,78 +1611,18 @@ function renderUnitEditor() {
         <input type="color" class="color-input" value="${customCol}">
         <button class="row-btn reset-btn" title="Clear custom colour">reset</button>
       </div>
+      <div class="r4">
+        <span class="coord-label">scale</span>
+        <input type="range" class="scale-input" min="${UNIT_SCALE_MIN}" max="${UNIT_SCALE_MAX}" step="0.1" value="${scale}">
+        <span class="scale-display">${scale.toFixed(1)}&times;</span>
+        <button class="row-btn scale-reset" title="Reset scale to 1&times;">reset</button>
+      </div>
     </div>`;
   }).join('');
 }
 function getUnitByIdx(i) {
   const us = (window.UNITS_DATA && window.UNITS_DATA.units) || [];
   return us[i];
-}
-
-/* =====================================================================
-   SEA ROUTES / TRADE LANES
-   Hardcoded lon/lat polylines for key Asia-Pacific sea lines of
-   communication. Chokepoints are labelled; long trunk SLOCs are not
-   (too cluttered). No external data — all embedded in this file.
-===================================================================== */
-const SEA_ROUTES = [
-  // --- Chokepoints ---
-  { name: "Malacca Strait",  type: "chokepoint", label: [101.2, 3.4],
-    coords: [[98.5, 6.5], [100.0, 4.8], [102.0, 3.2], [103.8, 1.3]] },
-  { name: "Sunda Strait",    type: "chokepoint", label: [105.9, -6.0],
-    coords: [[104.8, -4.8], [105.8, -6.2], [106.6, -7.4]] },
-  { name: "Lombok Strait",   type: "chokepoint", label: [116.5, -9.4],
-    coords: [[115.5, -8.2], [115.9, -9.4], [116.2, -10.8]] },
-  { name: "Taiwan Strait",   type: "chokepoint", label: [119.0, 24.6],
-    coords: [[118.1, 23.3], [119.0, 24.5], [120.2, 25.5]] },
-  { name: "Luzon Strait",    type: "chokepoint", label: [122.0, 20.4],
-    coords: [[120.2, 21.3], [121.8, 20.5], [123.2, 19.6]] },
-  { name: "Miyako Strait",   type: "chokepoint", label: [126.5, 25.0],
-    coords: [[124.5, 24.2], [125.8, 25.1], [127.5, 25.9], [129.0, 26.5]] },
-  { name: "Tsushima Strait", type: "chokepoint", label: [130.0, 34.3],
-    coords: [[128.3, 35.2], [129.6, 34.2], [131.2, 33.0]] },
-  { name: "Tsugaru Strait",  type: "chokepoint", label: [140.6, 41.9],
-    coords: [[139.7, 41.5], [140.5, 41.5], [141.4, 41.5]] },
-  { name: "Soya Strait",     type: "chokepoint", label: [142.4, 46.3],
-    coords: [[141.5, 45.5], [142.3, 45.8], [143.3, 46.0]] },
-  // --- Major trunk sea lanes (no labels to reduce clutter) ---
-  { name: "SLOC — Malacca → East Asia", type: "major",
-    coords: [[103.8, 1.3], [108, 5], [113, 10], [116, 14], [119, 17.5],
-             [121.5, 20.5], [124, 25], [127, 29], [131, 33], [136, 35], [140, 35.5]] },
-  { name: "SLOC — Indian Ocean → Malacca", type: "major",
-    coords: [[65, 5], [72, 5.5], [80, 5.8], [88, 6], [94, 6.2], [98, 6.2],
-             [100, 5.2], [102, 3.5], [103.8, 1.3]] },
-  { name: "SLOC — Australia → East Asia", type: "major",
-    coords: [[118, -14], [120.5, -10], [122, -4], [123, 2], [124, 7],
-             [122, 12], [121, 17], [122, 21], [126, 26], [131, 32]] },
-  { name: "SLOC — Japan → N. Pacific", type: "major",
-    coords: [[140, 35.5], [148, 36], [156, 37], [165, 38], [175, 39]] },
-  { name: "SLOC — Shanghai → Yokohama", type: "major",
-    coords: [[122, 31.5], [126, 32.5], [130, 33.5], [134, 34.5],
-             [138, 35.2], [139.8, 35.3]] },
-];
-
-function renderSeaRoutes() {
-  gSeaRoutes.innerHTML = '';
-  gSeaRouteLabels.innerHTML = '';
-  for (const r of SEA_ROUTES) {
-    const pts = r.coords.map(project);
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
-    line.setAttribute('points', pts.map(p => p[0].toFixed(2) + ',' + p[1].toFixed(2)).join(' '));
-    line.setAttribute('class', 'sea-route' + (r.type === 'major' ? ' major' : ''));
-    const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-    title.textContent = r.name;
-    line.appendChild(title);
-    gSeaRoutes.appendChild(line);
-    if (r.label) {
-      const [lx, ly] = project(r.label);
-      const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      t.setAttribute('x', lx); t.setAttribute('y', ly);
-      t.setAttribute('class', 'sea-route-label' + (r.type === 'major' ? ' major' : ''));
-      t.textContent = r.name;
-      gSeaRouteLabels.appendChild(t);
-    }
-  }
 }
 
 /* =====================================================================
@@ -1283,8 +1639,9 @@ const state = {
   showEvents: true,
   showUnits: true,
   showLabels: true,
-  showRoutes: false,
-  transform: { tx: 0, ty: 0, s: 1 }
+  transform: { tx: 0, ty: 0, s: 1 },
+  countryInfo: {},    // iso_a3 -> { capital, population, gdp, ... } overrides on top of COUNTRY_INFO_DEFAULTS
+  openCountryIso: null
 };
 
 /* =====================================================================
@@ -1787,14 +2144,6 @@ document.getElementById('btn-toggle-pinlabels').addEventListener('click', (e) =>
   e.target.textContent = document.body.classList.contains('all-labels')
     ? 'Hide other pin labels' : 'Show all pin labels';
 });
-document.getElementById('btn-toggle-routes').addEventListener('click', (e) => {
-  state.showRoutes = !state.showRoutes;
-  gSeaRoutes.style.display = state.showRoutes ? '' : 'none';
-  gSeaRouteLabels.style.display = state.showRoutes ? '' : 'none';
-  e.target.textContent = state.showRoutes ? 'Hide sea routes' : 'Show sea routes';
-  e.target.classList.toggle('active', state.showRoutes);
-});
-
 /* =====================================================================
    EDIT MODES (paint / erase / pin drop)
 ===================================================================== */
@@ -1861,7 +2210,7 @@ svg.addEventListener('click', (e) => {
     if (!name || !name.trim()) { setMode(null); return; }
     const id = 'poi-' + Date.now().toString(36);
     if (!window.SCENARIOS_DATA.points) window.SCENARIOS_DATA.points = [];
-    window.SCENARIOS_DATA.points.push({ id, name: name.trim(), coord: [lon, lat], icon: 'dot' });
+    window.SCENARIOS_DATA.points.push({ id, name: name.trim(), coord: [lon, lat], icon: 'dot', scale: 1.0 });
     renderPois();
     renderPoiEditor();
     setMode(null);
@@ -1890,13 +2239,29 @@ svg.addEventListener('click', (e) => {
       affiliation: 'friendly',
       branch: 'infantry',
       echelon: 'platoon',
-      color: null
+      color: null,
+      scale: 1.0
     });
     renderUnits();
     renderUnitEditor();
     setMode(null);
     return;
   }
+  // No mode active: clicking a country opens the country info panel.
+  if (state.mode === null) {
+    const countryTarget = e.target.closest('.country');
+    if (countryTarget) {
+      const iso = countryTarget.getAttribute('data-iso');
+      if (iso) openCountryPanel(iso);
+      return;
+    }
+  }
+});
+
+/* Re-render the country panel when the Live editor is toggled — view mode
+   switches between read-only fields and inputs. */
+document.getElementById('editor-panel').addEventListener('toggle', () => {
+  if (state.openCountryIso) renderCountryPanel();
 });
 
 /* =====================================================================
@@ -1930,6 +2295,13 @@ poiListEl.addEventListener('input', (e) => {
     if (preview) preview.innerHTML = iconPreviewHtml(p.icon);
     return;
   }
+  if (e.target.classList.contains('scale-input')) {
+    p.scale = clampPoiScale(parseFloat(e.target.value));
+    renderPois();
+    const display = row.querySelector('.scale-display');
+    if (display) display.textContent = p.scale.toFixed(1) + '\u00d7';
+    return;
+  }
 });
 poiListEl.addEventListener('click', (e) => {
   const row = e.target.closest('.poi-row');
@@ -1950,6 +2322,15 @@ poiListEl.addEventListener('click', (e) => {
     }
     return;
   }
+  if (e.target.classList.contains('scale-reset')) {
+    p.scale = 1.0;
+    renderPois();
+    const slider = row.querySelector('.scale-input');
+    const display = row.querySelector('.scale-display');
+    if (slider) slider.value = '1';
+    if (display) display.textContent = '1.0\u00d7';
+    return;
+  }
 });
 
 document.getElementById('btn-poi-add-centre').addEventListener('click', () => {
@@ -1960,7 +2341,7 @@ document.getElementById('btn-poi-add-centre').addEventListener('click', () => {
   if (!name || !name.trim()) return;
   const id = 'poi-' + Date.now().toString(36);
   if (!window.SCENARIOS_DATA.points) window.SCENARIOS_DATA.points = [];
-  window.SCENARIOS_DATA.points.push({ id, name: name.trim(), coord: [lon, lat], icon: 'dot' });
+  window.SCENARIOS_DATA.points.push({ id, name: name.trim(), coord: [lon, lat], icon: 'dot', scale: 1.0 });
   renderPois();
   renderPoiEditor();
 });
@@ -2006,6 +2387,13 @@ unitListEl.addEventListener('input', (e) => {
     u.color = e.target.value;
     renderUnits();
     refreshUnitRowPreview(row, u);
+    return;
+  }
+  if (e.target.classList.contains('scale-input')) {
+    u.scale = clampUnitScale(parseFloat(e.target.value));
+    renderUnits();
+    const display = row.querySelector('.scale-display');
+    if (display) display.textContent = u.scale.toFixed(1) + '\u00d7';
     return;
   }
 });
@@ -2061,6 +2449,15 @@ unitListEl.addEventListener('click', (e) => {
     refreshUnitRowPreview(row, u);
     return;
   }
+  if (e.target.classList.contains('scale-reset')) {
+    u.scale = 1.0;
+    renderUnits();
+    const slider = row.querySelector('.scale-input');
+    const display = row.querySelector('.scale-display');
+    if (slider) slider.value = '1';
+    if (display) display.textContent = '1.0\u00d7';
+    return;
+  }
 });
 
 document.getElementById('btn-unit-add-centre').addEventListener('click', () => {
@@ -2077,7 +2474,8 @@ document.getElementById('btn-unit-add-centre').addEventListener('click', () => {
     affiliation: 'friendly',
     branch: 'infantry',
     echelon: 'platoon',
-    color: null
+    color: null,
+    scale: 1.0
   });
   renderUnits();
   renderUnitEditor();
@@ -2111,6 +2509,7 @@ document.getElementById('btn-export').addEventListener('click', () => {
     scenario: state.scenario,
     points: (window.SCENARIOS_DATA && window.SCENARIOS_DATA.points) || [],
     units:  (window.UNITS_DATA && window.UNITS_DATA.units) || [],
+    countryInfo: state.countryInfo || {},
     exportedAt: new Date().toISOString()
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -2133,8 +2532,11 @@ document.getElementById('file-import').addEventListener('change', (e) => {
       state.currentEventIdx = p.currentEventIdx ?? (p.scenario.events.length ? 0 : -1);
       if (Array.isArray(p.points)) window.SCENARIOS_DATA.points = p.points;
       if (Array.isArray(p.units))  window.UNITS_DATA.units = p.units;
+      if (p.countryInfo && typeof p.countryInfo === 'object') state.countryInfo = p.countryInfo;
+      else state.countryInfo = {};
       repaintHighlights(); renderPins(); renderPois(); renderPoiEditor();
       renderUnits(); renderUnitEditor(); renderSidebar();
+      if (state.openCountryIso) renderCountryPanel();
       if (state.currentEventIdx >= 0) focusEvent(state.currentEventIdx, false);
       selScenario.value = state.scenarioId;
     } catch (err) { alert('Could not read session file: ' + err.message); }
@@ -2156,10 +2558,6 @@ renderPois();
 renderPoiEditor();
 renderUnits();
 renderUnitEditor();
-renderSeaRoutes();
-// Sea routes default to hidden — user opts in via the View toggle.
-gSeaRoutes.style.display = state.showRoutes ? '' : 'none';
-gSeaRouteLabels.style.display = state.showRoutes ? '' : 'none';
 const first = (window.SCENARIOS_DATA.scenarios[0] || {}).id;
 if (first) { selScenario.value = first; loadScenario(first); }
 fitView();
