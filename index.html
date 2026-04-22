@@ -985,7 +985,10 @@ function renderPois() {
     const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     t.setAttribute('x', x + labelOffset); t.setAttribute('y', y + 1.0 * s);
     t.setAttribute('class', 'poi-label');
-    t.setAttribute('font-size', 3.2 * s);
+    // Inline style beats the .poi-label { font-size: 3.2px } CSS rule —
+    // SVG presentation attributes lose to stylesheet rules, so we have
+    // to use style.fontSize for the per-POI scale to actually apply.
+    t.style.fontSize = (3.2 * s) + 'px';
     t.dataset.poiId = p.id;
     t.textContent = p.name;
     gPoiLabels.appendChild(t);
@@ -1539,7 +1542,9 @@ function renderUnits() {
       t.setAttribute('x', x + hw * s + 0.8);
       t.setAttribute('y', y + 1.0 * s);
       t.setAttribute('class', 'unit-label');
-      t.setAttribute('font-size', 3.0 * s);
+      // Inline style is required — SVG presentation attributes lose to
+      // stylesheet rules, and .unit-label has a fixed font-size in CSS.
+      t.style.fontSize = (3.0 * s) + 'px';
       t.dataset.unitId = u.id;
       t.textContent = u.label;
       gUnitLabels.appendChild(t);
