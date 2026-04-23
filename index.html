@@ -698,7 +698,7 @@
         <div class="cp-title">
           <h3 id="cp-name"></h3>
           <div class="cp-iso" id="cp-iso"></div>
-          <div class="cp-edit-badge hidden" id="cp-edit-badge">Editing &mdash; live editor open</div>
+          <div class="cp-edit-badge hidden" id="cp-edit-badge">Editing &mdash; editor open</div>
         </div>
       </div>
       <div id="cp-body"></div>
@@ -1138,7 +1138,8 @@ function getPoiByIdx(i) {
 /* =====================================================================
    COUNTRY INFO PANEL
    Clicking a country in view mode pops up a briefing card in the top-right.
-   Data is ballpark figures for TTX prep; edit them in the live editor and
+   Data is ballpark figures for TTX prep; open the sidebar's "Editor"
+   dropdown and the fields in the country panel become editable — any
    overrides persist in the session JSON. All values are plain strings so
    users can format populations/currency however they like.
 ===================================================================== */
@@ -1295,8 +1296,13 @@ function getCountryInfo(iso) {
   return merged;
 }
 
-function isLiveEditorOpen() {
-  const ep = document.getElementById('editor-panel');
+function isEditorOpen() {
+  // Country info panel flips to editable mode whenever the main "Editor"
+  // dropdown (#editors-group) is open — NOT just the inner "Live editor"
+  // sub-panel. Users expect that opening the outer Editor group is enough
+  // to let them tweak country briefing fields; the inner Live editor
+  // sub-panel is only for paint/pin/POI/unit modes.
+  const ep = document.getElementById('editors-group');
   return !!(ep && ep.open);
 }
 
@@ -1329,7 +1335,7 @@ function renderCountryPanel() {
   if (!iso) return;
   const info = getCountryInfo(iso);
   const name = countryNameFor(iso);
-  const editing = isLiveEditorOpen();
+  const editing = isEditorOpen();
 
   cpNameEl.textContent = name;
   cpIsoEl.textContent = iso;
@@ -2517,9 +2523,12 @@ svg.addEventListener('click', (e) => {
   }
 });
 
-/* Re-render the country panel when the Live editor is toggled — view mode
-   switches between read-only fields and inputs. */
-document.getElementById('editor-panel').addEventListener('toggle', () => {
+/* Re-render the country panel when the main Editor dropdown is toggled
+   — view mode switches between read-only fields and inputs. Wired to
+   #editors-group (the outer "Editor" details) rather than the inner
+   "Live editor" sub-panel so users only need to open the top-level
+   Editor group to start editing country fields. */
+document.getElementById('editors-group').addEventListener('toggle', () => {
   if (state.openCountryIso) renderCountryPanel();
 });
 
