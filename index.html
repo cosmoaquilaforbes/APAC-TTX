@@ -5,10 +5,60 @@
 <title>Wargame Visualisation — Asia Pacific</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
+  /* ===========================================================
+     SKIN PALETTE TOKENS
+     Every surface/colour the skin system cares about is declared
+     here on :root as the "default" (Field Notebook) theme.  Each
+     body[data-skin="<id>"] block below overrides a subset of
+     these to retint the whole UI without touching any JS logic.
+     ========================================================= */
+  :root {
+    --body-bg: #f6f5f1;
+    --sidebar-bg: #ffffff;
+    --panel-bg: #fdfcf8;
+    --raised-bg: #ffffff;
+    --input-bg: #fafaf7;
+    --btn-bg: #f9f7ef;
+    --btn-bg-hover: #eee7d1;
+    --row-hover: #f3f0e6;
+    --panel-border: #e2dfd7;
+    --input-border: #d5d0c3;
+    --btn-border: #cfcabd;
+    --btn-primary-bg: #2b2b2b;
+    --btn-primary-bg-hover: #1a1a1a;
+    --btn-primary-fg: #fdfcf8;
+    --accent: #6b9bd1;
+    --accent-soft: #dce7f1;
+    --slider-accent: #3a6aa8;
+    --text-primary: #2b2b2b;
+    --text-strong: #1f1f1f;
+    --text-secondary: #3a3a3a;
+    --text-muted: #64625c;
+    --text-faint: #8a857a;
+    --text-placeholder: #b3ae9f;
+    --ocean: #dce7f0;
+    --country-default: #ece8dd;
+    --country-stroke: #a8a095;
+    --pin-color: #c25050;
+    --badge-bg: #e8efff;
+    --badge-fg: #1e4fa8;
+    --label-halo: rgba(255,255,255,.9);
+    --pin-label-bg: rgba(253,252,248,.88);
+    --notes-bg: #fbf9f2;
+    --notes-border: #ecead9;
+    --hint-bg: #fffbe7;
+    --hint-border: #ecd98f;
+    /* On-map text: kept separate from sidebar --text-* so dark-sidebar
+       skins can use cream UI text yet still render country/POI/unit
+       labels in dark ink against light country fills. */
+    --map-ink: #1f1f1f;
+    --pin-label-fill: #1f1f1f;
+  }
+
   /* ---------- reset & base ---------- */
   *, *::before, *::after { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; font-family: "Inter", "Segoe UI", system-ui, sans-serif;
-               background: #f6f5f1; color: #2b2b2b; overflow: hidden; }
+               background: var(--body-bg); color: var(--text-primary); overflow: hidden; }
   button, input, select, textarea { font: inherit; color: inherit; }
   button { cursor: pointer; }
   a { color: inherit; }
@@ -18,46 +68,46 @@
   body.presenting #app { grid-template-columns: 0 1fr; }
   body.presenting #sidebar { visibility: hidden; }
 
-  #sidebar { background: #ffffff; border-right: 1px solid #e2dfd7;
+  #sidebar { background: var(--sidebar-bg); border-right: 1px solid var(--panel-border);
              overflow-y: auto; padding: 18px 18px 28px; display: flex; flex-direction: column; gap: 14px;
              position: relative; }
   #btn-present { position: absolute; top: 14px; right: 14px; z-index: 5; }
-  #map-wrap { position: relative; overflow: hidden; background: #dce7f0; }
+  #map-wrap { position: relative; overflow: hidden; background: var(--ocean); }
 
   /* ---------- sidebar pieces ---------- */
   .brand { font-size: 14px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
-           color: #64625c; }
+           color: var(--text-muted); }
   h1.title { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
-  h2 { margin: 16px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: #64625c; font-weight: 600; }
-  p.desc { margin: 0; font-size: 13px; line-height: 1.5; color: #3a3a3a; }
+  h2 { margin: 16px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: var(--text-muted); font-weight: 600; }
+  p.desc { margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
 
   select, input[type=text], input[type=color], textarea {
-    width: 100%; padding: 7px 9px; border: 1px solid #d5d0c3; border-radius: 4px;
-    background: #fafaf7; color: #2b2b2b; }
+    width: 100%; padding: 7px 9px; border: 1px solid var(--input-border); border-radius: 4px;
+    background: var(--input-bg); color: var(--text-primary); }
   textarea { min-height: 72px; resize: vertical; }
-  label.field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #64625c;
+  label.field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-muted);
                 text-transform: uppercase; letter-spacing: .08em; }
 
   ul.events { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
-  ul.events li { border: 1px solid #e2dfd7; border-radius: 5px; padding: 8px 10px; background: #fdfcf8;
+  ul.events li { border: 1px solid var(--panel-border); border-radius: 5px; padding: 8px 10px; background: var(--panel-bg);
                  cursor: pointer; font-size: 13px; display: flex; gap: 10px; align-items: flex-start;
                  transition: background .12s, border-color .12s; }
-  ul.events li:hover { background: #f3f0e6; }
-  ul.events li.current { border-color: #2b2b2b; background: #fff; }
-  ul.events li .time { font-weight: 600; color: #64625c; min-width: 46px; flex-shrink: 0; }
+  ul.events li:hover { background: var(--row-hover); }
+  ul.events li.current { border-color: var(--text-primary); background: var(--raised-bg); }
+  ul.events li .time { font-weight: 600; color: var(--text-muted); min-width: 46px; flex-shrink: 0; }
   ul.events li .t { flex: 1; }
-  ul.events li .dot { width: 9px; height: 9px; border-radius: 50%; background: #c25050; margin-top: 4px; flex-shrink: 0; }
+  ul.events li .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--pin-color); margin-top: 4px; flex-shrink: 0; }
 
   .btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
-  button.btn { border: 1px solid #cfcabd; background: #f9f7ef; padding: 6px 10px; border-radius: 4px; font-size: 13px; }
-  button.btn:hover { background: #eee7d1; }
-  button.btn.primary { background: #2b2b2b; color: #fdfcf8; border-color: #2b2b2b; }
-  button.btn.primary:hover { background: #1a1a1a; }
-  button.btn.active { background: #dce7f1; border-color: #6b9bd1; }
+  button.btn { border: 1px solid var(--btn-border); background: var(--btn-bg); padding: 6px 10px; border-radius: 4px; font-size: 13px; }
+  button.btn:hover { background: var(--btn-bg-hover); }
+  button.btn.primary { background: var(--btn-primary-bg); color: var(--btn-primary-fg); border-color: var(--btn-primary-bg); }
+  button.btn.primary:hover { background: var(--btn-primary-bg-hover); }
+  button.btn.active { background: var(--accent-soft); border-color: var(--accent); }
 
-  details.panel { border: 1px solid #e2dfd7; border-radius: 5px; padding: 8px 10px; background: #fdfcf8; }
+  details.panel { border: 1px solid var(--panel-border); border-radius: 5px; padding: 8px 10px; background: var(--panel-bg); }
   details.panel summary { cursor: pointer; font-size: 12px; text-transform: uppercase; letter-spacing: .1em;
-                         color: #64625c; font-weight: 600; outline: none; }
+                         color: var(--text-muted); font-weight: 600; outline: none; }
   details.panel > *:not(summary) { margin-top: 8px; }
 
   /* ---------- map ---------- */
@@ -66,8 +116,8 @@
   svg#map.paint     { cursor: crosshair; }
   svg#map.pindrop   { cursor: copy; }
 
-  .ocean { fill: #dce7f0; }
-  .country { fill: #ece8dd; stroke: #a8a095; stroke-width: 0.4; stroke-linejoin: round;
+  .ocean { fill: var(--ocean); }
+  .country { fill: var(--country-default); stroke: var(--country-stroke); stroke-width: 0.4; stroke-linejoin: round;
              transition: fill .18s, filter .15s; }
   /* Filter-based hover: works for both unpainted countries and ones with an
      inline fill (painted via the Live editor), because filter stacks on top
@@ -78,94 +128,99 @@
      central Japan that's partially visible near the seam. */
   .country:hover,
   .country.country-hover-mirror { filter: brightness(0.94) saturate(1.35); }
-  .country.selected-edit { stroke: #2b2b2b; stroke-width: 1.1; }
+  .country.selected-edit { stroke: var(--text-primary); stroke-width: 1.1; }
 
   /* Country labels default to 2.75px (~25% of the original 11px) because the
      world map is denser than the APAC-only view; smaller text keeps labels
      from visually swamping countries at mid zoom. The --cl-size custom
      property is set on #viewport and driven by the "Country label size"
      slider in the sidebar, so users can dial them back up if they want. */
-  .country-label { font-size: var(--cl-size, 2.75px); fill: #2b2b2b; font-weight: 600; pointer-events: none;
-                   text-anchor: middle; paint-order: stroke; stroke: rgba(255,255,255,.9); stroke-width: 0.55px;
+  .country-label { font-size: var(--cl-size, 2.75px); fill: var(--map-ink); font-weight: 600; pointer-events: none;
+                   text-anchor: middle; paint-order: stroke; stroke: var(--label-halo); stroke-width: 0.55px;
                    letter-spacing: 0.02em; }
-  .poi { color: #4a4741; fill: #4a4741; cursor: pointer; }
-  .poi-icon { color: #2b2b2b; cursor: pointer; }
-  .poi-label { font-size: 3.2px; fill: #333; pointer-events: none; text-anchor: start;
-               paint-order: stroke; stroke: rgba(255,255,255,.85); stroke-width: 0.7px; }
+  .poi { color: var(--map-ink); fill: var(--map-ink); cursor: pointer; }
+  .poi-icon { color: var(--map-ink); cursor: pointer; }
+  .poi-label { font-size: 3.2px; fill: var(--map-ink); pointer-events: none; text-anchor: start;
+               paint-order: stroke; stroke: var(--label-halo, rgba(255,255,255,.85)); stroke-width: 0.7px; }
 
   /* Sidebar POI editor */
   #poi-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
-  .poi-row { border: 1px solid #e2dfd7; border-radius: 5px; padding: 6px 7px; background: #fdfcf8;
+  .poi-row { border: 1px solid var(--panel-border); border-radius: 5px; padding: 6px 7px; background: var(--panel-bg);
              display: flex; flex-direction: column; gap: 4px; }
   .poi-row .r1 { display: flex; gap: 5px; align-items: center; }
   .poi-row .r2, .poi-row .r3 { display: flex; gap: 5px; align-items: center; font-size: 10px; text-transform: none;
-                 letter-spacing: normal; color: #64625c; flex-wrap: wrap; }
+                 letter-spacing: normal; color: var(--text-muted); flex-wrap: wrap; }
   .poi-row .r2 input[type=number] { width: 64px; padding: 3px 5px; font-size: 11px; text-transform: none; letter-spacing: normal; }
-  .poi-row .coord-label { font-size: 10px; color: #8a857a; }
-  .poi-row .scale-input { flex: 1; min-width: 110px; accent-color: #3a6aa8; cursor: pointer; }
-  .poi-row .scale-display { font-variant-numeric: tabular-nums; font-size: 11px; color: #3a3a3a;
+  .poi-row .coord-label { font-size: 10px; color: var(--text-faint); }
+  .poi-row .scale-input { flex: 1; min-width: 110px; accent-color: var(--slider-accent); cursor: pointer; }
+  .poi-row .scale-display { font-variant-numeric: tabular-nums; font-size: 11px; color: var(--text-secondary);
                             min-width: 32px; text-align: right; }
-  .poi-row .scale-reset { font-size: 10px; color: #64625c; padding: 2px 5px; }
+  .poi-row .scale-reset { font-size: 10px; color: var(--text-muted); padding: 2px 5px; }
   .poi-row .preview { width: 20px; height: 20px; flex-shrink: 0; }
-  .poi-row .preview svg { width: 100%; height: 100%; color: #2b2b2b; }
+  .poi-row .preview svg { width: 100%; height: 100%; color: var(--text-primary); }
   .poi-row .name-input { flex: 1; font-size: 12px; padding: 4px 6px; text-transform: none; letter-spacing: normal; }
   .poi-row .icon-select { font-size: 11px; padding: 3px 4px; max-width: 110px; text-transform: none; letter-spacing: normal; }
-  .poi-row .row-btn { border: 1px solid #d5d0c3; background: #f9f7ef; border-radius: 3px;
+  .poi-row .row-btn { border: 1px solid var(--input-border); background: var(--btn-bg); border-radius: 3px;
                       padding: 3px 7px; font-size: 11px; cursor: pointer; }
-  .poi-row .row-btn:hover { background: #eee7d1; }
+  .poi-row .row-btn:hover { background: var(--btn-bg-hover); }
   .poi-row .delete-btn { color: #b03030; }
   .poi-row .delete-btn:hover { background: #f6d9d9; border-color: #d59898; }
-  #poi-list .empty-note { font-size: 11px; color: #8a857a; padding: 6px 2px; }
+  #poi-list .empty-note { font-size: 11px; color: var(--text-faint); padding: 6px 2px; }
 
   /* ---------- NATO unit symbols ---------- */
   .unit { cursor: pointer; }
+  /* When the Units editor is open, units can be dragged on the map; show
+     a grab cursor to signal that affordance, and grabbing while the user
+     is mid-drag. Toggled by JS (body.units-editor-open / body.dragging-unit). */
+  body.units-editor-open .unit { cursor: grab; }
+  body.dragging-unit, body.dragging-unit .unit { cursor: grabbing !important; }
   .unit .unit-frame { stroke-width: 0.8; stroke-linejoin: round; }
   .unit .unit-branch { pointer-events: none; }
-  .unit .unit-label { font-size: 3.0px; fill: #1f1f1f; pointer-events: none; text-anchor: start;
-                      paint-order: stroke; stroke: rgba(255,255,255,.9); stroke-width: 0.7px; font-weight: 600; }
-  .unit .unit-echelon { font-size: 2.4px; fill: #1f1f1f; pointer-events: none; text-anchor: middle;
-                        paint-order: stroke; stroke: rgba(255,255,255,.95); stroke-width: 0.6px;
+  .unit .unit-label { font-size: 3.0px; fill: var(--map-ink); pointer-events: none; text-anchor: start;
+                      paint-order: stroke; stroke: var(--label-halo); stroke-width: 0.7px; font-weight: 600; }
+  .unit .unit-echelon { font-size: 2.4px; fill: var(--map-ink); pointer-events: none; text-anchor: middle;
+                        paint-order: stroke; stroke: var(--label-halo, rgba(255,255,255,.95)); stroke-width: 0.6px;
                         font-weight: 700; letter-spacing: 0.04em; }
 
   /* Sidebar unit editor (shares a lot with POI editor) */
   #unit-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
-  .unit-row { border: 1px solid #e2dfd7; border-radius: 5px; padding: 6px 7px; background: #fdfcf8;
+  .unit-row { border: 1px solid var(--panel-border); border-radius: 5px; padding: 6px 7px; background: var(--panel-bg);
               display: flex; flex-direction: column; gap: 4px; }
   .unit-row .r1 { display: flex; gap: 5px; align-items: center; }
   .unit-row .r2, .unit-row .r3, .unit-row .r4 { display: flex; gap: 5px; align-items: center; font-size: 10px;
-                                  text-transform: none; letter-spacing: normal; color: #64625c; flex-wrap: wrap; }
-  .unit-row .scale-input { flex: 1; min-width: 110px; accent-color: #3a6aa8; cursor: pointer; }
-  .unit-row .scale-display { font-variant-numeric: tabular-nums; font-size: 11px; color: #3a3a3a;
+                                  text-transform: none; letter-spacing: normal; color: var(--text-muted); flex-wrap: wrap; }
+  .unit-row .scale-input { flex: 1; min-width: 110px; accent-color: var(--slider-accent); cursor: pointer; }
+  .unit-row .scale-display { font-variant-numeric: tabular-nums; font-size: 11px; color: var(--text-secondary);
                              min-width: 32px; text-align: right; }
-  .unit-row .scale-reset { font-size: 10px; color: #64625c; padding: 2px 5px; }
+  .unit-row .scale-reset { font-size: 10px; color: var(--text-muted); padding: 2px 5px; }
   .unit-row input[type=text] { flex: 1; font-size: 12px; padding: 4px 6px; text-transform: none; letter-spacing: normal; }
   .unit-row input[type=number] { width: 64px; padding: 3px 5px; font-size: 11px; text-transform: none; letter-spacing: normal; }
   .unit-row input[type=color] { width: 26px; height: 22px; padding: 0; border-radius: 3px; cursor: pointer; }
   .unit-row select { font-size: 11px; padding: 3px 4px; text-transform: none; letter-spacing: normal; }
   .unit-row .preview { width: 36px; height: 22px; flex-shrink: 0; }
   .unit-row .preview svg { width: 100%; height: 100%; display: block; }
-  .unit-row .row-btn { border: 1px solid #d5d0c3; background: #f9f7ef; border-radius: 3px;
+  .unit-row .row-btn { border: 1px solid var(--input-border); background: var(--btn-bg); border-radius: 3px;
                        padding: 3px 7px; font-size: 11px; cursor: pointer; }
-  .unit-row .row-btn:hover { background: #eee7d1; }
+  .unit-row .row-btn:hover { background: var(--btn-bg-hover); }
   .unit-row .delete-btn { color: #b03030; }
   .unit-row .delete-btn:hover { background: #f6d9d9; border-color: #d59898; }
-  .unit-row .coord-label { font-size: 10px; color: #8a857a; }
-  .unit-row .reset-btn { font-size: 10px; color: #64625c; padding: 2px 5px; }
-  #unit-list .empty-note { font-size: 11px; color: #8a857a; padding: 6px 2px; }
+  .unit-row .coord-label { font-size: 10px; color: var(--text-faint); }
+  .unit-row .reset-btn { font-size: 10px; color: var(--text-muted); padding: 2px 5px; }
+  #unit-list .empty-note { font-size: 11px; color: var(--text-faint); padding: 6px 2px; }
 
   .pin { cursor: pointer; }
   .pin circle.outer { fill: rgba(194, 80, 80, .20); }
-  .pin circle.inner { fill: #c25050; stroke: #fff; stroke-width: 0.6; }
+  .pin circle.inner { fill: var(--pin-color); stroke: #fff; stroke-width: 0.6; }
   .pin.current circle.outer { animation: pulse 1.6s ease-in-out infinite; }
   /* Pin labels live in #g-pin-labels, a sibling group that renders AFTER
      #g-pins, so every event's bg+text paints above every other event's
      pin marker. Hover is synced from the marker to its matching label
      via JS (pin-label-group.hovered), since CSS :hover can't hop groups. */
   .pin-label-group { pointer-events: none; }
-  .pin-label-bg { fill: rgba(253, 252, 248, .88); stroke: rgba(0, 0, 0, .25); stroke-width: 0.12px;
+  .pin-label-bg { fill: var(--pin-label-bg); stroke: rgba(0, 0, 0, .3); stroke-width: 0.12px;
                   rx: 0.7; ry: 0.7; pointer-events: none;
                   opacity: 0; transition: opacity .15s; }
-  .pin-label { font-size: 3.4px; fill: #1f1f1f; font-weight: 600; pointer-events: none;
+  .pin-label { font-size: 3.4px; fill: var(--pin-label-fill); font-weight: 600; pointer-events: none;
                text-anchor: middle;
                opacity: 0; transition: opacity .15s; }
   .pin-label-group.current .pin-label,
@@ -180,42 +235,42 @@
   #hud { position: absolute; bottom: 18px; right: 18px; display: flex; flex-direction: column; gap: 8px;
          align-items: flex-end; }
   #hud .zoom-group { display: flex; flex-direction: column; gap: 6px; }
-  #hud button { width: 36px; height: 36px; font-size: 18px; background: #fff; border: 1px solid #cfcabd;
+  #hud button { width: 36px; height: 36px; font-size: 18px; background: var(--raised-bg); border: 1px solid var(--btn-border);
                 border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,.06); padding: 0; }
-  #hud button:hover { background: #f3f0e6; }
-  #scale-bar { background: #fff; border: 1px solid #cfcabd; border-radius: 4px;
+  #hud button:hover { background: var(--row-hover); }
+  #scale-bar { background: var(--raised-bg); border: 1px solid var(--btn-border); border-radius: 4px;
                box-shadow: 0 1px 3px rgba(0,0,0,.06); padding: 5px 8px 4px;
-               font-size: 10px; line-height: 1; color: #3a3a3a; text-align: center; min-width: 80px; }
+               font-size: 10px; line-height: 1; color: var(--text-secondary); text-align: center; min-width: 80px; }
   #scale-bar .sb-label { margin-bottom: 3px; letter-spacing: .02em; }
   #scale-bar .sb-track { position: relative; height: 8px; margin: 0 auto; }
   #scale-bar .sb-bar { position: absolute; left: 0; top: 3px; height: 4px;
-                       background: #2b2b2b; border: 1px solid #2b2b2b; border-radius: 1px; }
-  #scale-bar .sb-tick { position: absolute; top: 0; width: 1px; height: 8px; background: #2b2b2b; }
+                       background: var(--text-primary); border: 1px solid var(--text-primary); border-radius: 1px; }
+  #scale-bar .sb-tick { position: absolute; top: 0; width: 1px; height: 8px; background: var(--text-primary); }
 
   #prev-next { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px;
-               background: #fff; border: 1px solid #cfcabd; border-radius: 6px; padding: 6px; box-shadow: 0 2px 6px rgba(0,0,0,.08); }
+               background: var(--raised-bg); border: 1px solid var(--btn-border); border-radius: 6px; padding: 6px; box-shadow: 0 2px 6px rgba(0,0,0,.08); }
   #prev-next .event-label { width: 360px; flex: 0 0 360px; padding: 0 10px;
                             display: flex; align-items: center; justify-content: center;
-                            font-size: 13px; color: #3a3a3a; text-align: center;
+                            font-size: 13px; color: var(--text-secondary); text-align: center;
                             white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   body.presenting #sidebar-toggle { display: block; }
-  #sidebar-toggle { position: absolute; top: 14px; left: 14px; display: none; background: #fff; border: 1px solid #cfcabd; border-radius: 4px; padding: 6px 10px; font-size: 12px; }
+  #sidebar-toggle { position: absolute; top: 14px; left: 14px; display: none; background: var(--raised-bg); border: 1px solid var(--btn-border); border-radius: 4px; padding: 6px 10px; font-size: 12px; }
 
   /* ---------- detail overlay ---------- */
   #detail { position: absolute; right: 14px; top: 14px; width: 360px; max-height: calc(100% - 28px);
-            background: #fff; border: 1px solid #cfcabd; border-radius: 6px; box-shadow: 0 6px 22px rgba(0,0,0,.12);
+            background: var(--raised-bg); border: 1px solid var(--btn-border); border-radius: 6px; box-shadow: 0 6px 22px rgba(0,0,0,.12);
             padding: 16px 18px; overflow-y: auto; display: none; }
   #detail.open { display: block; }
   #detail .close { position: absolute; top: 8px; right: 10px; background: none; border: none; font-size: 20px;
-                   line-height: 1; color: #64625c; }
-  #detail .t-time { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: #64625c; font-weight: 600; }
+                   line-height: 1; color: var(--text-muted); }
+  #detail .t-time { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--text-muted); font-weight: 600; }
   #detail h3 { margin: 4px 0 8px; font-size: 17px; font-weight: 600; }
-  #detail p.loc { margin: 0 0 8px; font-size: 12px; color: #64625c; }
+  #detail p.loc { margin: 0 0 8px; font-size: 12px; color: var(--text-muted); }
   #detail p.body { margin: 0 0 12px; font-size: 14px; line-height: 1.55; white-space: pre-wrap; }
-  #detail img { width: 100%; border-radius: 4px; border: 1px solid #e2dfd7; display: block; margin-top: 6px; }
-  #detail .edit-fields { margin-top: 12px; padding-top: 12px; border-top: 1px dashed #d5d0c3;
+  #detail img { width: 100%; border-radius: 4px; border: 1px solid var(--panel-border); display: block; margin-top: 6px; }
+  #detail .edit-fields { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--input-border);
                           display: flex; flex-direction: column; gap: 8px; }
-  #detail .edit-fields label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #64625c; }
+  #detail .edit-fields label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); }
 
   /* ---------- country info panel ----------
      Sits in the same top-right slot as #detail but at a higher z-index so it
@@ -223,61 +278,61 @@
      deep info dump never blows past the screen. */
   #country-panel { position: absolute; right: 14px; top: 14px; width: 360px;
                    max-height: calc(100% - 28px);
-                   background: #fff; border: 1px solid #cfcabd; border-radius: 6px;
+                   background: var(--raised-bg); border: 1px solid var(--btn-border); border-radius: 6px;
                    box-shadow: 0 6px 22px rgba(0,0,0,.18);
                    padding: 14px 16px 16px; overflow-y: auto;
                    display: none; z-index: 25; }
   #country-panel.open { display: block; }
   #country-panel .cp-close { position: absolute; top: 8px; right: 10px; background: none; border: none;
-                             font-size: 20px; line-height: 1; color: #64625c; cursor: pointer; }
-  #country-panel .cp-close:hover { color: #1f1f1f; }
+                             font-size: 20px; line-height: 1; color: var(--text-muted); cursor: pointer; }
+  #country-panel .cp-close:hover { color: var(--text-strong); }
   #country-panel .cp-header { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; padding-right: 22px; }
   #country-panel .cp-flag { width: 56px; height: 38px; flex-shrink: 0;
-                            border: 1px solid #d5d0c3; border-radius: 3px; overflow: hidden;
+                            border: 1px solid var(--input-border); border-radius: 3px; overflow: hidden;
                             display: flex; align-items: center; justify-content: center;
-                            background: #ece8dd; position: relative; }
+                            background: var(--country-default); position: relative; }
   #country-panel .cp-flag img { width: 100%; height: 100%; object-fit: cover; display: block; }
   #country-panel .cp-flag .cp-flag-fallback { width: 100%; height: 100%;
                                               display: flex; align-items: center; justify-content: center;
-                                              font-size: 10px; color: #8a857a; letter-spacing: .08em;
+                                              font-size: 10px; color: var(--text-faint); letter-spacing: .08em;
                                               text-align: center; padding: 2px; }
   #country-panel .cp-flag .cp-flag-swatch { position: absolute; inset: 0; }
   #country-panel .cp-title { flex: 1; min-width: 0; }
   #country-panel h3 { margin: 0 0 2px; font-size: 17px; font-weight: 600; }
-  #country-panel .cp-iso { font-size: 10px; text-transform: uppercase; letter-spacing: .12em; color: #8a857a; }
-  #country-panel .cp-section { margin: 10px 0 0; padding-top: 8px; border-top: 1px dashed #e2dfd7; }
+  #country-panel .cp-iso { font-size: 10px; text-transform: uppercase; letter-spacing: .12em; color: var(--text-faint); }
+  #country-panel .cp-section { margin: 10px 0 0; padding-top: 8px; border-top: 1px dashed var(--panel-border); }
   #country-panel .cp-section:first-of-type { border-top: none; padding-top: 0; }
   #country-panel .cp-section h4 { margin: 0 0 6px; font-size: 11px; text-transform: uppercase;
-                                  letter-spacing: .1em; color: #64625c; font-weight: 600; }
+                                  letter-spacing: .1em; color: var(--text-muted); font-weight: 600; }
   #country-panel .cp-field { display: grid; grid-template-columns: 108px 1fr; gap: 4px 10px;
                              font-size: 12.5px; line-height: 1.45; margin-bottom: 4px; }
-  #country-panel .cp-field .cp-label { color: #64625c; font-size: 11px; padding-top: 2px; }
-  #country-panel .cp-field .cp-value { color: #1f1f1f; word-break: break-word; }
-  #country-panel .cp-field .cp-value.placeholder { color: #b3ae9f; font-style: italic; }
+  #country-panel .cp-field .cp-label { color: var(--text-muted); font-size: 11px; padding-top: 2px; }
+  #country-panel .cp-field .cp-value { color: var(--text-strong); word-break: break-word; }
+  #country-panel .cp-field .cp-value.placeholder { color: var(--text-placeholder); font-style: italic; }
   #country-panel input[type=text], #country-panel textarea {
     width: 100%; font: inherit; font-size: 12.5px; padding: 4px 6px;
-    border: 1px solid #d5d0c3; border-radius: 3px; background: #fdfcf8;
-    text-transform: none; letter-spacing: normal; color: #1f1f1f;
+    border: 1px solid var(--input-border); border-radius: 3px; background: var(--panel-bg);
+    text-transform: none; letter-spacing: normal; color: var(--text-strong);
   }
   #country-panel textarea { min-height: 60px; resize: vertical; line-height: 1.4; }
   #country-panel .cp-notes { font-size: 12.5px; line-height: 1.5; white-space: pre-wrap;
-                             color: #1f1f1f; background: #fbf9f2; border: 1px solid #ecead9;
+                             color: var(--text-strong); background: var(--notes-bg); border: 1px solid var(--notes-border);
                              border-radius: 4px; padding: 7px 9px; }
-  #country-panel .cp-notes.placeholder { color: #b3ae9f; font-style: italic; background: #fdfcf8; }
+  #country-panel .cp-notes.placeholder { color: var(--text-placeholder); font-style: italic; background: var(--panel-bg); }
   #country-panel .cp-edit-badge { display: inline-block; font-size: 10px; text-transform: uppercase;
-                                  letter-spacing: .1em; color: #1e4fa8; background: #e8efff;
+                                  letter-spacing: .1em; color: var(--badge-fg); background: var(--badge-bg);
                                   padding: 2px 6px; border-radius: 3px; margin-top: 4px; }
-  #country-panel .cp-footer-note { font-size: 10px; color: #8a857a; margin-top: 12px;
-                                   border-top: 1px dashed #e2dfd7; padding-top: 6px; line-height: 1.4; }
+  #country-panel .cp-footer-note { font-size: 10px; color: var(--text-faint); margin-top: 12px;
+                                   border-top: 1px dashed var(--panel-border); padding-top: 6px; line-height: 1.4; }
 
   /* Image picker inside the event editor. */
   .image-input-row { display: flex; gap: 6px; align-items: stretch; }
   .image-input-row input[type=text] { flex: 1; min-width: 0; }
-  .image-hint { font-size: 10px; color: #8a857a; text-transform: none;
+  .image-hint { font-size: 10px; color: var(--text-faint); text-transform: none;
                 letter-spacing: normal; line-height: 1.35; display: block; margin-top: 2px; }
   .image-hint code { background: #f2efe6; padding: 0 3px; border-radius: 2px; font-size: 10px; }
-  .image-preview-box { margin-top: 4px; border: 1px dashed #d5d0c3; border-radius: 4px;
-                       padding: 4px; background: #fdfcf8; display: none; }
+  .image-preview-box { margin-top: 4px; border: 1px dashed var(--input-border); border-radius: 4px;
+                       padding: 4px; background: var(--panel-bg); display: none; }
   .image-preview-box.shown { display: block; }
   .image-preview-box img { width: 100%; display: block; border-radius: 2px; }
   .image-missing { font-size: 11px; color: #b34a2e; padding: 10px 6px; text-align: center;
@@ -286,7 +341,319 @@
   /* ---------- misc ---------- */
   .hidden { display: none !important; }
   .swatch { display: inline-block; width: 14px; height: 14px; border: 1px solid rgba(0,0,0,.1); border-radius: 2px; vertical-align: middle; }
-  .mode-hint { font-size: 12px; color: #64625c; padding: 6px 8px; background: #fffbe7; border: 1px solid #ecd98f; border-radius: 4px; }
+
+  /* Paint-colour preset palette under the colour input. Grouped into
+     (1) colours the baked-in scenarios use, (2) NATO affiliation colours
+     matching the unit-frame strokes, (3) common CTC fictional-country
+     wargaming colours. Each swatch is a button so keyboard users can
+     tab through them. */
+  .paint-presets { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .paint-presets .sw-group { display: flex; gap: 3px; padding-right: 4px; margin-right: 4px;
+                              border-right: 1px solid var(--panel-border); }
+  .paint-presets .sw-group:last-child { border-right: none; margin-right: 0; padding-right: 0; }
+  .paint-presets .sw { width: 18px; height: 18px; border: 1px solid rgba(0,0,0,.35);
+                        border-radius: 3px; padding: 0; cursor: pointer; transition: transform .08s; }
+  .paint-presets .sw:hover { transform: scale(1.15); }
+  .paint-presets .sw.active { outline: 2px solid var(--text-primary); outline-offset: 1px; }
+  .mode-hint { font-size: 12px; color: var(--text-muted); padding: 6px 8px; background: var(--hint-bg); border: 1px solid var(--hint-border); border-radius: 4px; }
+
+
+  /* ===========================================================
+     SKIN OVERRIDES — body[data-skin="<id>"] swaps a subset of
+     the tokens on :root.  Stick to palette tokens only (no
+     rule-body changes) so cascading through var() works cleanly.
+     Iconography stays generic: no national emblems, no real-group
+     imagery, just palette shifts.
+     ========================================================= */
+
+  /* ----- US DoD (olive drab / desert tan / muted navy ocean) */
+  body[data-skin="dod"] {
+    --body-bg: #2d382a;
+    --sidebar-bg: #3c4837;
+    --panel-bg: #4a5640;
+    --raised-bg: #3c4837;
+    --input-bg: #5a6751;
+    --btn-bg: #566347;
+    --btn-bg-hover: #677554;
+    --row-hover: #566347;
+    --panel-border: #2a3222;
+    --input-border: #2a3222;
+    --btn-border: #2a3222;
+    --btn-primary-bg: #b8932a;
+    --btn-primary-bg-hover: #a0811e;
+    --btn-primary-fg: #1d2416;
+    --accent: #c9a649;
+    --accent-soft: #5d6b53;
+    --slider-accent: #c9a649;
+    --text-primary: #e8e5d4;
+    --text-strong: #f6f3e3;
+    --text-secondary: #cfcbb2;
+    --text-muted: #b4b19a;
+    --text-faint: #8f8e76;
+    --text-placeholder: #7d7a64;
+    --ocean: #3a5264;
+    --country-default: #d9cf9f;
+    --country-stroke: #6a5e3a;
+    --pin-color: #cb4e2b;
+    --badge-bg: #2a3222;
+    --badge-fg: #c9a649;
+    --label-halo: rgba(240,230,195,.85);
+    --pin-label-bg: rgba(60,72,55,.94);
+    --notes-bg: #4a5640;
+    --notes-border: #2a3222;
+    --hint-bg: #6a6135;
+    --hint-border: #87763d;
+    /* Warm bistre — tactical map overprint feel on a tan country fill,
+       readable without the near-black starkness of #1d2416. */
+    --map-ink: #3d331f;
+    --pin-label-fill: #e8e5d4;
+  }
+
+  /* ----- PLA (deep red accent + brass/gold on warm cream) */
+  body[data-skin="pla"] {
+    --body-bg: #f4ede2;
+    --sidebar-bg: #f8f3e8;
+    --panel-bg: #fcf8ed;
+    --raised-bg: #fcf8ed;
+    --input-bg: #f4ede2;
+    --btn-bg: #ead9ad;
+    --btn-bg-hover: #e3c985;
+    --row-hover: #f4e9c5;
+    --panel-border: #b8924a;
+    --input-border: #b8924a;
+    --btn-border: #9b7a3d;
+    --btn-primary-bg: #a01b1b;
+    --btn-primary-bg-hover: #7f1414;
+    --btn-primary-fg: #f6f3e3;
+    --accent: #a01b1b;
+    --accent-soft: #f0d4c2;
+    --slider-accent: #a01b1b;
+    --text-primary: #3e2d17;
+    --text-strong: #1e140a;
+    --text-secondary: #5a412a;
+    --text-muted: #6e5a40;
+    --text-faint: #8b7a5c;
+    --text-placeholder: #b8a688;
+    --ocean: #b8c5c4;
+    --country-default: #ebe0bd;
+    --country-stroke: #8d7849;
+    --pin-color: #d4a12a;
+    --badge-bg: #fbecb4;
+    --badge-fg: #a01b1b;
+    --label-halo: rgba(252,248,237,.9);
+    --pin-label-bg: rgba(252,248,237,.94);
+    --notes-bg: #f4ede2;
+    --notes-border: #c6b07b;
+    --hint-bg: #fbecb4;
+    --hint-border: #d4a12a;
+    --map-ink: #1e140a;
+    --pin-label-fill: #1e140a;
+  }
+
+  /* ----- Cyber / Grey Zone (near-black terminal with neon green) */
+  body[data-skin="cyber"] {
+    --body-bg: #0d1117;
+    --sidebar-bg: #0a0e13;
+    --panel-bg: #141a23;
+    --raised-bg: #141a23;
+    --input-bg: #0f1520;
+    --btn-bg: #1c2433;
+    --btn-bg-hover: #243144;
+    --row-hover: #1a2230;
+    --panel-border: #263244;
+    --input-border: #263244;
+    --btn-border: #2d3a4e;
+    --btn-primary-bg: #00d481;
+    --btn-primary-bg-hover: #00b86d;
+    --btn-primary-fg: #0a0e13;
+    --accent: #00d481;
+    --accent-soft: #0f3a2a;
+    --slider-accent: #00d481;
+    --text-primary: #cbe3d8;
+    --text-strong: #d9f5e6;
+    --text-secondary: #a5c0b4;
+    --text-muted: #7a9b92;
+    --text-faint: #546f6a;
+    --text-placeholder: #3d524e;
+    --ocean: #0a1622;
+    --country-default: #1e2832;
+    --country-stroke: #2d5466;
+    --pin-color: #ff4f81;
+    --badge-bg: #0f3a2a;
+    --badge-fg: #00d481;
+    --label-halo: rgba(10,14,19,.85);
+    --pin-label-bg: rgba(20,26,35,.96);
+    --notes-bg: #141a23;
+    --notes-border: #263244;
+    --hint-bg: #2a3520;
+    --hint-border: #5a7432;
+    --map-ink: #d9f5e6;
+    --pin-label-fill: #d9f5e6;
+  }
+
+  /* ----- Russian Armed Forces (forest green sidebar, oxblood accent) */
+  body[data-skin="ruaf"] {
+    --body-bg: #edeae0;
+    --sidebar-bg: #364f2d;
+    --panel-bg: #3f5a36;
+    --raised-bg: #f4f1e6;
+    --input-bg: #2f4527;
+    --btn-bg: #4b6741;
+    --btn-bg-hover: #5c7a52;
+    --row-hover: #4b6741;
+    --panel-border: #243820;
+    --input-border: #243820;
+    --btn-border: #243820;
+    --btn-primary-bg: #901b1b;
+    --btn-primary-bg-hover: #751414;
+    --btn-primary-fg: #f4f1e6;
+    --accent: #a32828;
+    --accent-soft: #4b6741;
+    --slider-accent: #a32828;
+    --text-primary: #e6e3d3;
+    --text-strong: #f4f1e6;
+    --text-secondary: #c9c4aa;
+    --text-muted: #a6a283;
+    --text-faint: #7d7a63;
+    --text-placeholder: #6a6753;
+    --ocean: #6d6f6a;
+    --country-default: #e3ddc6;
+    --country-stroke: #4b4a3d;
+    --pin-color: #a32828;
+    --badge-bg: #243820;
+    --badge-fg: #e3ddc6;
+    --label-halo: rgba(244,241,230,.9);
+    --pin-label-bg: rgba(54,79,45,.94);
+    --notes-bg: #2f4527;
+    --notes-border: #243820;
+    --hint-bg: #5a4f2a;
+    --hint-border: #8a7a42;
+    --map-ink: #1e140a;
+    --pin-label-fill: #f4f1e6;
+  }
+
+  /* ----- Ukrainian Armed Forces (deep blue sidebar, wheat countries, yellow accent) */
+  body[data-skin="ukraf"] {
+    --body-bg: #ebe9e1;
+    --sidebar-bg: #14375f;
+    --panel-bg: #1a4270;
+    --raised-bg: #f4f2e8;
+    --input-bg: #0e2a4c;
+    --btn-bg: #1e4f85;
+    --btn-bg-hover: #275f9e;
+    --row-hover: #1e4f85;
+    --panel-border: #092040;
+    --input-border: #092040;
+    --btn-border: #092040;
+    --btn-primary-bg: #f5c518;
+    --btn-primary-bg-hover: #d8ab0d;
+    --btn-primary-fg: #0a1e3a;
+    --accent: #f5c518;
+    --accent-soft: #1e4f85;
+    --slider-accent: #f5c518;
+    --text-primary: #ede9d3;
+    --text-strong: #f6f3e3;
+    --text-secondary: #c9c19d;
+    --text-muted: #a9a07a;
+    --text-faint: #7a7352;
+    --text-placeholder: #5f5942;
+    --ocean: #0e2a4c;
+    --country-default: #ebd989;
+    --country-stroke: #8d7834;
+    --pin-color: #f5c518;
+    --badge-bg: #092040;
+    --badge-fg: #f5c518;
+    --label-halo: rgba(252,248,237,.85);
+    --pin-label-bg: rgba(244,242,232,.94);
+    --notes-bg: #0e2a4c;
+    --notes-border: #092040;
+    --hint-bg: #5a4f10;
+    --hint-border: #a89a30;
+    --map-ink: #1e1810;
+    --pin-label-fill: #1e1810;
+  }
+
+  /* ----- British Armed Forces / UK MoD (navy + khaki + red accent) */
+  body[data-skin="mod"] {
+    --body-bg: #1a2438;
+    --sidebar-bg: #1a2438;
+    --panel-bg: #243148;
+    --raised-bg: #243148;
+    --input-bg: #1e2a3e;
+    --btn-bg: #2f3d5a;
+    --btn-bg-hover: #3c4a6c;
+    --row-hover: #2f3d5a;
+    --panel-border: #0d1628;
+    --input-border: #0d1628;
+    --btn-border: #0d1628;
+    --btn-primary-bg: #c8102e;
+    --btn-primary-bg-hover: #a40d26;
+    --btn-primary-fg: #f5f2e9;
+    --accent: #c8102e;
+    --accent-soft: #2f3d5a;
+    --slider-accent: #c8102e;
+    --text-primary: #e3dfd1;
+    --text-strong: #f5f2e9;
+    --text-secondary: #bfbaa5;
+    --text-muted: #9c977f;
+    --text-faint: #6e6a53;
+    --text-placeholder: #4f4c3a;
+    --ocean: #0d1628;
+    --country-default: #b8b393;
+    --country-stroke: #5f5a3a;
+    --pin-color: #c8102e;
+    --badge-bg: #0d1628;
+    --badge-fg: #c8102e;
+    --label-halo: rgba(245,242,233,.85);
+    --pin-label-bg: rgba(245,242,233,.94);
+    --notes-bg: #243148;
+    --notes-border: #0d1628;
+    --hint-bg: #5a4a20;
+    --hint-border: #a88030;
+    --map-ink: #1e1810;
+    --pin-label-fill: #1e1810;
+  }
+
+  /* ----- Irregular forces (dust-black with desert ochre accent) */
+  body[data-skin="irregular"] {
+    --body-bg: #1c1814;
+    --sidebar-bg: #1c1814;
+    --panel-bg: #2a241c;
+    --raised-bg: #2a241c;
+    --input-bg: #241e17;
+    --btn-bg: #3a3125;
+    --btn-bg-hover: #4a3f30;
+    --row-hover: #3a3125;
+    --panel-border: #1a1612;
+    --input-border: #4a3f30;
+    --btn-border: #4a3f30;
+    --btn-primary-bg: #b8843d;
+    --btn-primary-bg-hover: #a67231;
+    --btn-primary-fg: #1c1814;
+    --accent: #c49550;
+    --accent-soft: #3a3125;
+    --slider-accent: #c49550;
+    --text-primary: #dccdb0;
+    --text-strong: #f0e4c9;
+    --text-secondary: #bfae8e;
+    --text-muted: #8e816a;
+    --text-faint: #655c49;
+    --text-placeholder: #4a4337;
+    --ocean: #2e3d3d;
+    --country-default: #b89b6c;
+    --country-stroke: #63512f;
+    --pin-color: #d44a2a;
+    --badge-bg: #3a3125;
+    --badge-fg: #c49550;
+    --label-halo: rgba(240,228,201,.8);
+    --pin-label-bg: rgba(42,36,28,.95);
+    --notes-bg: #2a241c;
+    --notes-border: #4a3f30;
+    --hint-bg: #4a3d1e;
+    --hint-border: #8a7230;
+    --map-ink: #1c1814;
+    --pin-label-fill: #f0e4c9;
+  }
 </style>
 </head>
 <body>
@@ -296,6 +663,20 @@
     <button class="btn" id="btn-present">Hide</button>
     <div class="brand">Tabletop Wargame</div>
     <h1 class="title">Asia Pacific Visualiser</h1>
+
+    <label class="field">
+      Skin
+      <select id="skin-select">
+        <option value="default">Field Notebook (default)</option>
+        <option value="dod">US DoD</option>
+        <option value="pla">PLA</option>
+        <option value="cyber">Cyber / Grey Zone</option>
+        <option value="ruaf">Russian Armed Forces</option>
+        <option value="ukraf">Ukrainian Armed Forces</option>
+        <option value="mod">British Armed Forces (MoD)</option>
+        <option value="irregular">Irregular Forces</option>
+      </select>
+    </label>
 
     <label class="field">
       Scenario
@@ -379,14 +760,21 @@
         <div class="btn-row">
           <button class="btn" id="mode-paint">Paint country</button>
           <button class="btn" id="mode-erase">Erase highlight</button>
+        </div>
+        <div class="btn-row">
           <button class="btn" id="mode-pin">Add event</button>
+          <button class="btn" id="mode-pin-remove">Remove event</button>
+        </div>
+        <div class="btn-row">
           <button class="btn" id="mode-poi-add">Add POI</button>
           <button class="btn" id="mode-poi-remove">Remove POI</button>
-          <button class="btn" id="mode-unit-add">Add unit</button>
         </div>
         <label class="field">
           Paint colour
           <input type="color" id="paint-color" value="#6b9bd1">
+          <div class="paint-presets" id="paint-presets" role="list" aria-label="Paint colour presets">
+            <!-- Swatches injected by JS from PAINT_PRESETS -->
+          </div>
         </label>
         <p class="mode-hint" id="mode-hint">Click a mode above, then click the map.</p>
 
@@ -737,26 +1125,6 @@ window.GEO_DATA = {"type":"FeatureCollection","features":[{"type":"Feature","pro
 window.UNITS_DATA = { units: [] };
 
 window.SCENARIOS_DATA = {
-  points: [
-    { id: "SGP",  name: "Singapore",    coord: [103.82,  1.35] },
-    { id: "HKG",  name: "Hong Kong",    coord: [114.17, 22.32] },
-    { id: "MAC",  name: "Macau",        coord: [113.54, 22.20] },
-    { id: "GUM",  name: "Guam",         coord: [144.79, 13.45] },
-    { id: "DGA",  name: "Diego Garcia", coord: [ 72.42, -7.31] },
-    { id: "OKI",  name: "Okinawa",      coord: [127.94, 26.34] },
-    { id: "SBC",  name: "Subic Bay",    coord: [120.23, 14.82] },
-    { id: "SCS",  name: "Scarborough Shoal", coord: [117.77, 15.13] },
-    { id: "SPR",  name: "Spratly Islands",   coord: [114.00,  9.50] },
-    { id: "PAR",  name: "Paracel Islands",   coord: [112.00, 16.50] },
-    { id: "SEN",  name: "Senkaku / Diaoyu",  coord: [123.47, 25.74] },
-    { id: "KIN",  name: "Kinmen",            coord: [118.32, 24.43] },
-    { id: "MAT",  name: "Matsu",             coord: [119.95, 26.15] },
-    { id: "KAO",  name: "Kaohsiung",         coord: [120.30, 22.63] },
-    { id: "DRW",  name: "Darwin",            coord: [130.85,-12.46] },
-    { id: "PER",  name: "Perth (HMAS Stirling)", coord: [115.76,-32.23] },
-    { id: "HNL",  name: "Honolulu",           coord: [202.14, 21.31] }
-  ],
-
   scenarios: [
     {
       id: "taiwan-strait-2027",
@@ -819,6 +1187,25 @@ window.SCENARIOS_DATA = {
           description: "Reported surge deployment of USAF bombers and tankers to Guam. Regional partners briefed on access, basing, and overflight posture.",
           image: ""
         }
+      ],
+      points: [
+  { id: "SGP",  name: "Singapore",    coord: [103.82,  1.35] },
+  { id: "HKG",  name: "Hong Kong",    coord: [114.17, 22.32] },
+  { id: "MAC",  name: "Macau",        coord: [113.54, 22.20] },
+  { id: "GUM",  name: "Guam",         coord: [144.79, 13.45] },
+  { id: "DGA",  name: "Diego Garcia", coord: [ 72.42, -7.31] },
+  { id: "OKI",  name: "Okinawa",      coord: [127.94, 26.34] },
+  { id: "SBC",  name: "Subic Bay",    coord: [120.23, 14.82] },
+  { id: "SCS",  name: "Scarborough Shoal", coord: [117.77, 15.13] },
+  { id: "SPR",  name: "Spratly Islands",   coord: [114.00,  9.50] },
+  { id: "PAR",  name: "Paracel Islands",   coord: [112.00, 16.50] },
+  { id: "SEN",  name: "Senkaku / Diaoyu",  coord: [123.47, 25.74] },
+  { id: "KIN",  name: "Kinmen",            coord: [118.32, 24.43] },
+  { id: "MAT",  name: "Matsu",             coord: [119.95, 26.15] },
+  { id: "KAO",  name: "Kaohsiung",         coord: [120.30, 22.63] },
+  { id: "DRW",  name: "Darwin",            coord: [130.85,-12.46] },
+  { id: "PER",  name: "Perth (HMAS Stirling)", coord: [115.76,-32.23] },
+  { id: "HNL",  name: "Honolulu",           coord: [202.14, 21.31] }
       ]
     },
 
@@ -866,6 +1253,25 @@ window.SCENARIOS_DATA = {
           description: "Two undersea cables linking Luzon to Taiwan register faults within 12 hours of each other. Repair ships dispatched.",
           image: ""
         }
+      ],
+      points: [
+  { id: "SGP",  name: "Singapore",    coord: [103.82,  1.35] },
+  { id: "HKG",  name: "Hong Kong",    coord: [114.17, 22.32] },
+  { id: "MAC",  name: "Macau",        coord: [113.54, 22.20] },
+  { id: "GUM",  name: "Guam",         coord: [144.79, 13.45] },
+  { id: "DGA",  name: "Diego Garcia", coord: [ 72.42, -7.31] },
+  { id: "OKI",  name: "Okinawa",      coord: [127.94, 26.34] },
+  { id: "SBC",  name: "Subic Bay",    coord: [120.23, 14.82] },
+  { id: "SCS",  name: "Scarborough Shoal", coord: [117.77, 15.13] },
+  { id: "SPR",  name: "Spratly Islands",   coord: [114.00,  9.50] },
+  { id: "PAR",  name: "Paracel Islands",   coord: [112.00, 16.50] },
+  { id: "SEN",  name: "Senkaku / Diaoyu",  coord: [123.47, 25.74] },
+  { id: "KIN",  name: "Kinmen",            coord: [118.32, 24.43] },
+  { id: "MAT",  name: "Matsu",             coord: [119.95, 26.15] },
+  { id: "KAO",  name: "Kaohsiung",         coord: [120.30, 22.63] },
+  { id: "DRW",  name: "Darwin",            coord: [130.85,-12.46] },
+  { id: "PER",  name: "Perth (HMAS Stirling)", coord: [115.76,-32.23] },
+  { id: "HNL",  name: "Honolulu",           coord: [202.14, 21.31] }
       ]
     },
 
@@ -874,7 +1280,8 @@ window.SCENARIOS_DATA = {
       title: "Blank Canvas",
       description: "Empty map for free-form facilitation. Highlight countries and drop pins live via the editor panel.",
       highlights: {},
-      events: []
+      events: [],
+      points: []
     }
   ]
 };
@@ -1043,10 +1450,22 @@ function clampPoiScale(v) {
   return Math.max(POI_SCALE_MIN, Math.min(POI_SCALE_MAX, n));
 }
 
+/* POIs are per-scenario now (they live on state.scenario.points).
+   currentPoints() returns the active scenario's POI array and lazily
+   initialises it to [] if the scenario definition didn't include one
+   (older scenarios loaded from session JSON, ad-hoc authoring, etc.).
+   All readers and writers go through this helper so there's exactly
+   one place to audit if the shape changes again. */
+function currentPoints() {
+  if (!state.scenario) return [];
+  if (!Array.isArray(state.scenario.points)) state.scenario.points = [];
+  return state.scenario.points;
+}
+
 function renderPois() {
   gPois.innerHTML = '';
   gPoiLabels.innerHTML = '';
-  const pts = (window.SCENARIOS_DATA || {points: []}).points;
+  const pts = currentPoints();
   for (const p of pts) {
     const [x, y] = project(p.coord);
     const iconKey = (p.icon && POI_ICON_KEYS.has(p.icon)) ? p.icon : 'dot';
@@ -1071,7 +1490,11 @@ function renderPois() {
     title.textContent = p.name;
     el.appendChild(title);
     gPois.appendChild(el);
-    const labelOffset = iconKey === 'dot' ? (1.6 * s) : (POI_ICON_SIZE * s / 2 + 0.6);
+    // Label offset from the POI icon. Small extra padding past the
+    // icon's edge so the text doesn't kiss the glyph's outline —
+    // bumped slightly from the original 0.6 for a touch more
+    // breathing room at all zoom levels.
+    const labelOffset = iconKey === 'dot' ? (2.3 * s) : (POI_ICON_SIZE * s / 2 + 1.4);
     const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     t.setAttribute('x', x + labelOffset); t.setAttribute('y', y + 1.0 * s);
     t.setAttribute('class', 'poi-label');
@@ -1093,7 +1516,7 @@ function iconPreviewHtml(iconKey) {
 function renderPoiEditor() {
   const container = document.getElementById('poi-list');
   if (!container) return;
-  const pts = (window.SCENARIOS_DATA && window.SCENARIOS_DATA.points) || [];
+  const pts = currentPoints();
   if (!pts.length) {
     container.innerHTML = '<div class="empty-note">No POIs yet. Use the buttons below to add one, or set the "Add POI" edit mode and click on the map.</div>';
     return;
@@ -1131,7 +1554,7 @@ function renderPoiEditor() {
   container.innerHTML = rows.join('');
 }
 function getPoiByIdx(i) {
-  const pts = (window.SCENARIOS_DATA && window.SCENARIOS_DATA.points) || [];
+  const pts = currentPoints();
   return pts[i];
 }
 
@@ -1882,34 +2305,114 @@ function animateTransform(target, duration) {
 
 /* pan via drag */
 let dragging = false, dragStart = null, dragDidMove = false;
+
+/* When the Units editor sub-panel is open, pressing on a unit grabs it
+   for drag-to-move instead of panning the map. unitDrag records the
+   pointer's starting lon/lat and the unit's starting coord so move
+   deltas can be applied seam-safely (the east-west map wrap means a
+   pointer crossing ±180° must not teleport the unit the long way). */
+let unitDrag = null;
+function isUnitEditorOpen() {
+  const ep = document.getElementById('unit-editor-panel');
+  return !!(ep && ep.open);
+}
+
 svg.addEventListener('mousedown', (e) => {
   if (e.button !== 0) return;
+
+  // Units-editor drag hijack: if the user pressed on a .unit while the
+  // Units editor is open, start a unit-drag gesture. This short-circuits
+  // the normal map-pan code path below.
+  if (isUnitEditorOpen()) {
+    const unitEl = e.target.closest('.unit');
+    const id = unitEl && unitEl.dataset && unitEl.dataset.unitId;
+    if (id) {
+      const units = (window.UNITS_DATA && window.UNITS_DATA.units) || [];
+      const u = units.find(x => x.id === id);
+      if (u && Array.isArray(u.coord) && Number.isFinite(u.coord[0]) && Number.isFinite(u.coord[1])) {
+        const [pLon, pLat] = screenToLonLat(e.clientX, e.clientY);
+        unitDrag = {
+          unit: u,
+          pointerStart: [pLon, pLat],
+          unitStart: [u.coord[0], u.coord[1]],
+        };
+        // Treat this mousedown as a "drag" so the svg click handler
+        // (which would otherwise open the country panel underneath on
+        // mouseup) gets suppressed.
+        dragDidMove = true;
+        document.body.classList.add('dragging-unit');
+        e.preventDefault();
+        return;
+      }
+    }
+  }
+
   dragging = true; dragDidMove = false;
   dragStart = { x: e.clientX, y: e.clientY, tx: state.transform.tx, ty: state.transform.ty };
   svg.classList.add('dragging');
 });
+
 window.addEventListener('mousemove', (e) => {
+  // Unit drag takes priority over map pan.
+  if (unitDrag) {
+    const [curLon, curLat] = screenToLonLat(e.clientX, e.clientY);
+    let dLon = curLon - unitDrag.pointerStart[0];
+    // Seam-safe delta: both pointer lons are canonical (wrapped into
+    // [LON_MIN, LON_MAX)); when the cursor crosses the map seam the raw
+    // diff jumps by ±390°, so fold it back into [-half, +half].
+    const lonRange = LON_MAX - LON_MIN;
+    const halfR = lonRange / 2;
+    dLon = ((dLon + halfR) % lonRange + lonRange) % lonRange - halfR;
+    const dLat = curLat - unitDrag.pointerStart[1];
+    let newLon = unitDrag.unitStart[0] + dLon;
+    // Keep the unit's stored lon inside the canonical map range so it
+    // sits on the central copy (renderUnits only draws the canonical
+    // position — which is fine, since units aren't in the world-ghost
+    // mirrors).
+    newLon = ((newLon - LON_MIN) % lonRange + lonRange) % lonRange + LON_MIN;
+    let newLat = unitDrag.unitStart[1] + dLat;
+    // Clamp to the map's visible lat window — no point letting units
+    // drift into the Arctic cutoff above/below the projection bounds.
+    newLat = Math.max(LAT_MIN, Math.min(LAT_MAX, newLat));
+    unitDrag.unit.coord = [newLon, newLat];
+    renderUnits();
+    return;
+  }
+
   if (!dragging) return;
   const dx = e.clientX - dragStart.x, dy = e.clientY - dragStart.y;
   if (Math.abs(dx) + Math.abs(dy) > 3) dragDidMove = true;
-  // convert screen px delta to SVG-space delta (viewBox / client size)
-  const rect = svg.getBoundingClientRect();
-  const k = MAP_W / rect.width;
-  state.transform.tx = dragStart.tx + dx * k;
-  state.transform.ty = dragStart.ty + dy * k;
+  // Route through clientDeltaToSvg so the pan magnitude respects
+  // preserveAspectRatio="slice" — same fix as screenToLonLat, otherwise
+  // dragging 100px could translate to the wrong amount of viewBox
+  // movement on non-matching aspect ratios.
+  const [dsx, dsy] = clientDeltaToSvg(dx, dy);
+  state.transform.tx = dragStart.tx + dsx;
+  state.transform.ty = dragStart.ty + dsy;
   applyTransform();
 });
+
 window.addEventListener('mouseup', () => {
+  if (unitDrag) {
+    // Refresh the sidebar row so its lon/lat inputs reflect the drop
+    // position. renderUnitEditor() re-renders all rows; cheap enough for
+    // the typical handful of units on the board.
+    unitDrag = null;
+    document.body.classList.remove('dragging-unit');
+    renderUnitEditor();
+    // Clear the "drag" flag on the next tick so a genuine click that
+    // follows (fresh gesture) still reaches the svg click handler.
+    setTimeout(() => { dragDidMove = false; }, 0);
+    return;
+  }
   dragging = false;
   svg.classList.remove('dragging');
 });
 
 svg.addEventListener('wheel', (e) => {
   e.preventDefault();
-  const rect = svg.getBoundingClientRect();
-  // cursor in SVG space (viewBox units)
-  const sx = (e.clientX - rect.left) / rect.width * MAP_W;
-  const sy = (e.clientY - rect.top) / rect.height * MAP_H;
+  // Cursor in SVG viewBox units, respecting preserveAspectRatio.
+  const [sx, sy] = clientToSvg(e.clientX, e.clientY);
   // cursor in map-data space (before scale)
   const { tx, ty, s } = state.transform;
   const mx = (sx - tx) / s, my = (sy - ty) / s;
@@ -1930,11 +2433,45 @@ function zoomBy(factor) {
   applyTransform();
 }
 
+/* Convert a client pixel coord (e.g. e.clientX / e.clientY) to a
+   point in the SVG's viewBox units, accounting for
+   preserveAspectRatio="xMidYMid slice" on #map.
+
+   The naive  `sx = (clientX - rect.left) / rect.width * MAP_W`  only
+   works when rect.width / rect.height == MAP_W / MAP_H. Any other
+   aspect ratio (the common case — browser window isn't 1950:725)
+   causes "slice" to scale the viewBox to FILL the rect (overflow
+   clipped) with centring on both axes — so the left-edge pixel
+   doesn't actually correspond to viewBox x=0, it corresponds to
+   something negative (the overflow we'd have clipped). Without
+   this correction, clicks drifted horizontally by whole degrees at
+   typical zoom levels — which is how Athens ended up in the Ionian
+   Sea. */
+function clientToSvg(clientX, clientY) {
+  const rect = svg.getBoundingClientRect();
+  // preserveAspectRatio="xMidYMid slice": viewBox is scaled so the
+  // LARGER of the two axis ratios fills the rect entirely.
+  const scl = Math.max(rect.width / MAP_W, rect.height / MAP_H);
+  const vbOffsetX = (rect.width  - MAP_W * scl) / 2;
+  const vbOffsetY = (rect.height - MAP_H * scl) / 2;
+  return [
+    (clientX - rect.left - vbOffsetX) / scl,
+    (clientY - rect.top  - vbOffsetY) / scl,
+  ];
+}
+
+/* Convert a pixel DELTA (dx/dy from drag movement) to a viewBox-unit
+   delta. Unlike clientToSvg this doesn't need the centring offset —
+   it's purely a magnitude conversion using the same slice scale. */
+function clientDeltaToSvg(dxClient, dyClient) {
+  const rect = svg.getBoundingClientRect();
+  const scl = Math.max(rect.width / MAP_W, rect.height / MAP_H);
+  return [dxClient / scl, dyClient / scl];
+}
+
 /* convert screen coords → map data [lon,lat] */
 function screenToLonLat(clientX, clientY) {
-  const rect = svg.getBoundingClientRect();
-  const sx = (clientX - rect.left) / rect.width * MAP_W;
-  const sy = (clientY - rect.top) / rect.height * MAP_H;
+  const [sx, sy] = clientToSvg(clientX, clientY);
   const { tx, ty, s } = state.transform;
   const mx = (sx - tx) / s, my = (sy - ty) / s;
   let lon = LON_MIN + mx / MAP_W * (LON_MAX - LON_MIN);
@@ -1961,6 +2498,8 @@ function loadScenario(id, { animate = true } = {}) {
   state.currentEventIdx = state.scenario.events.length ? 0 : -1;
   repaintHighlights();
   renderPins();
+  renderPois();
+  renderPoiEditor();
   renderSidebar();
   if (state.currentEventIdx >= 0) focusEvent(state.currentEventIdx, false);
   // Frame the scenario's area so the user lands on the Pacific when they
@@ -2072,6 +2611,33 @@ function renderPins() {
     marker.addEventListener('click', (e) => {
       e.stopPropagation();
       if (dragDidMove) return;
+      if (state.mode === 'pin-remove') {
+        // Splice the event out of the scenario. Keep currentEventIdx
+        // pointing at something sensible:
+        //   - if we removed the current event, clamp to the now-last
+        //     event (or -1 if the list is empty);
+        //   - if we removed an event before the current one, shift
+        //     the index down by one so it still points at the same
+        //     event.
+        const removed = i;
+        state.scenario.events.splice(removed, 1);
+        if (state.currentEventIdx === removed) {
+          state.currentEventIdx = state.scenario.events.length
+            ? Math.min(removed, state.scenario.events.length - 1)
+            : -1;
+        } else if (state.currentEventIdx > removed) {
+          state.currentEventIdx -= 1;
+        }
+        renderPins();
+        renderEventList();
+        updatePrevNext();
+        // The detail card may have been showing the event we just
+        // removed; dismiss it either way — if it was showing a
+        // different event the user can reopen it via the sidebar.
+        detail.classList.remove('open');
+        setMode(null);
+        return;
+      }
       focusEvent(i, true);
     });
     gPins.appendChild(marker);
@@ -2117,6 +2683,11 @@ function focusEvent(i, animate = true) {
   if (!state.scenario || !state.scenario.events[i]) return;
   state.currentEventIdx = i;
   const ev = state.scenario.events[i];
+  // The country info panel and the event detail card share the top-right
+  // real estate, so bringing an event into focus should dismiss any open
+  // country briefing — otherwise the country panel's higher z-index would
+  // completely cover the event card the user just asked to see.
+  if (state.openCountryIso) closeCountryPanel();
   if (animate) zoomTo(ev.location[0], ev.location[1], 4, 650);
   showDetail(ev, i);
   renderPins();
@@ -2164,7 +2735,11 @@ function showDetail(ev, idx) {
   document.getElementById('ef-body').value  = ev.description || '';
   document.getElementById('ef-image').value = ev.image || '';
   updateImageEditorPreview(ev.image || '');
-  dEdit.classList.toggle('hidden', !document.getElementById('editor-panel').open);
+  // Edit-mode gate: the event detail card's edit fields follow the
+  // main "Editor" dropdown, not the inner "Live editor" sub-panel, so
+  // opening the outer Editor group anywhere in the sidebar is enough
+  // to edit events / scenarios / country fields uniformly.
+  dEdit.classList.toggle('hidden', !document.getElementById('editors-group').open);
   dEdit.dataset.idx = idx;
   detail.classList.add('open');
 }
@@ -2376,7 +2951,16 @@ document.getElementById('btn-toggle-pois').addEventListener('click', (e) => {
 });
 document.getElementById('btn-toggle-events').addEventListener('click', (e) => {
   state.showEvents = !state.showEvents;
+  // Hide (or reveal) both the pin markers AND the pin-label callouts,
+  // which live in a separate sibling group so they paint above every
+  // pin regardless of z-order. Without this the little text panels
+  // would linger on the map after the user hid events.
   gPins.style.display = state.showEvents ? '' : 'none';
+  gPinLabels.style.display = state.showEvents ? '' : 'none';
+  // Also dismiss the event detail card in the top-right — it's tied
+  // to a specific event, so keeping it open after "Hide events" is
+  // confusing (and it visually covers the map).
+  if (!state.showEvents) detail.classList.remove('open');
   e.target.textContent = state.showEvents ? 'Hide events' : 'Show events';
 });
 document.getElementById('btn-toggle-labels').addEventListener('click', (e) => {
@@ -2412,36 +2996,122 @@ if (countryLabelScale) {
 /* =====================================================================
    EDIT MODES (paint / erase / pin drop)
 ===================================================================== */
-const modePaint = document.getElementById('mode-paint');
-const modeErase = document.getElementById('mode-erase');
-const modePin   = document.getElementById('mode-pin');
+const modePaint     = document.getElementById('mode-paint');
+const modeErase     = document.getElementById('mode-erase');
+const modePin       = document.getElementById('mode-pin');
+const modePinRemove = document.getElementById('mode-pin-remove');
 const modePoiAdd    = document.getElementById('mode-poi-add');
 const modePoiRemove = document.getElementById('mode-poi-remove');
-const modeUnitAdd   = document.getElementById('mode-unit-add');
 const modeHint  = document.getElementById('mode-hint');
 const paintColor = document.getElementById('paint-color');
 
+/* Buttons that visibly reflect the active mode. 'unit-add' no longer
+   has a Live-editor button (it's triggered from the Units editor
+   sub-panel's "+ Click on map" instead), so we don't need a button
+   entry for it — the mode is still fully supported at the click-
+   handler layer. */
+const MODE_BUTTONS = [modePaint, modeErase, modePin, modePinRemove, modePoiAdd, modePoiRemove];
+
 function setMode(m) {
   state.mode = (state.mode === m) ? null : m;
-  [modePaint, modeErase, modePin, modePoiAdd, modePoiRemove, modeUnitAdd].forEach(b => b.classList.remove('active'));
+  MODE_BUTTONS.forEach(b => b.classList.remove('active'));
   svg.classList.remove('paint','pindrop');
-  if (state.mode === 'paint' || state.mode === 'erase' || state.mode === 'poi-remove') svg.classList.add('paint');
+  // 'paint'-style cursor (crosshair) for click-to-act-on-existing modes.
+  if (state.mode === 'paint' || state.mode === 'erase' ||
+      state.mode === 'poi-remove' || state.mode === 'pin-remove') svg.classList.add('paint');
+  // 'pindrop'-style cursor (copy) for click-to-place-new-thing modes.
   if (state.mode === 'pin' || state.mode === 'poi-add' || state.mode === 'unit-add') svg.classList.add('pindrop');
   if (state.mode === 'paint') { modePaint.classList.add('active'); modeHint.textContent = 'Click a country to fill it with the paint colour.'; }
-  else if (state.mode === 'erase') { modeErase.classList.add('active'); modeHint.textContent = 'Click a country to remove its highlight.'; }
-  else if (state.mode === 'pin')   { modePin.classList.add('active');   modeHint.textContent = 'Click anywhere on the map to add a new event.'; }
+  else if (state.mode === 'erase')      { modeErase.classList.add('active');     modeHint.textContent = 'Click a country to remove its highlight.'; }
+  else if (state.mode === 'pin')        { modePin.classList.add('active');       modeHint.textContent = 'Click anywhere on the map to add a new event.'; }
+  else if (state.mode === 'pin-remove') { modePinRemove.classList.add('active'); modeHint.textContent = 'Click an existing event pin to remove it.'; }
   else if (state.mode === 'poi-add')    { modePoiAdd.classList.add('active');    modeHint.textContent = 'Click anywhere on the map to add a Point of Interest.'; }
   else if (state.mode === 'poi-remove') { modePoiRemove.classList.add('active'); modeHint.textContent = 'Click an existing POI marker to remove it.'; }
-  else if (state.mode === 'unit-add')   { modeUnitAdd.classList.add('active');   modeHint.textContent = 'Click anywhere on the map to drop a NATO unit counter.'; }
+  else if (state.mode === 'unit-add')   {                                         modeHint.textContent = 'Click anywhere on the map to drop a NATO unit counter.'; }
   else modeHint.textContent = 'Click a mode above, then click the map.';
 }
-modePaint.addEventListener('click', () => setMode('paint'));
-modeErase.addEventListener('click', () => setMode('erase'));
-modePin.addEventListener('click',   () => setMode('pin'));
+modePaint.addEventListener('click',     () => setMode('paint'));
+modeErase.addEventListener('click',     () => setMode('erase'));
+modePin.addEventListener('click',       () => setMode('pin'));
+modePinRemove.addEventListener('click', () => setMode('pin-remove'));
 modePoiAdd.addEventListener('click',    () => setMode('poi-add'));
 modePoiRemove.addEventListener('click', () => setMode('poi-remove'));
-modeUnitAdd.addEventListener('click',   () => setMode('unit-add'));
-paintColor.addEventListener('input', e => state.paintColor = e.target.value);
+paintColor.addEventListener('input', e => {
+  state.paintColor = e.target.value;
+  syncActivePreset(e.target.value);
+});
+
+/* ------ Paint-colour presets ----------------------------------------
+   Three groups:
+     (a) Scenario: the three highlight colours baked into the Taiwan
+         Strait and SCS Gray Zone scenarios — handy for keeping live
+         edits consistent with the authored look.
+     (b) NATO: the four affiliation strokes from the unit-frame
+         palette (friendly / hostile / neutral / unknown), so a user
+         painting a country hostile and dropping hostile units on it
+         gets visually coherent styling.
+     (c) CTC: common fictional-country colours from Combat Training
+         Centre-style exercises (Donovia/Atropia/Ariana/Pirtuni/grey
+         zone). Muted rather than saturated so they don't overpower
+         the map; presenters can still pick anything via the colour
+         picker above.
+-------------------------------------------------------------------- */
+const PAINT_PRESETS = [
+  { group: 'Scenario', items: [
+    { color: '#d48a8a', label: 'Scenario — adversary wash'  },
+    { color: '#6b9bd1', label: 'Scenario — primary actor'   },
+    { color: '#9fb8d8', label: 'Scenario — ally wash'       },
+  ]},
+  { group: 'NATO', items: [
+    { color: '#1e4fa8', label: 'NATO — friendly (blue)'  },
+    { color: '#a12626', label: 'NATO — hostile (red)'    },
+    { color: '#1f7a3a', label: 'NATO — neutral (green)'  },
+    { color: '#a88a1e', label: 'NATO — unknown (amber)'  },
+  ]},
+  { group: 'CTC fictional', items: [
+    { color: '#a83838', label: 'Donovian — OPFOR aggressor'     },
+    { color: '#56a068', label: 'Atropian — host nation'         },
+    { color: '#d67b3a', label: 'Arianan — regional actor'       },
+    { color: '#7a4b8c', label: 'Pirtunian — secondary actor'    },
+    { color: '#94a3ad', label: 'Grey zone / unaligned'          },
+  ]},
+];
+
+const paintPresetsEl = document.getElementById('paint-presets');
+function renderPaintPresets() {
+  paintPresetsEl.innerHTML = '';
+  for (const grp of PAINT_PRESETS) {
+    const g = document.createElement('div');
+    g.className = 'sw-group';
+    g.title = grp.group;
+    for (const p of grp.items) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'sw';
+      btn.style.background = p.color;
+      btn.dataset.color = p.color;
+      btn.title = p.label + ' — ' + p.color;
+      btn.setAttribute('aria-label', p.label);
+      btn.addEventListener('click', () => {
+        paintColor.value = p.color;
+        state.paintColor = p.color;
+        syncActivePreset(p.color);
+      });
+      g.appendChild(btn);
+    }
+    paintPresetsEl.appendChild(g);
+  }
+}
+function syncActivePreset(color) {
+  // Normalise to lower-case hex so '#6B9BD1' from a picker still
+  // matches the preset entry.
+  const c = (color || '').toLowerCase();
+  paintPresetsEl.querySelectorAll('.sw').forEach(sw => {
+    sw.classList.toggle('active', (sw.dataset.color || '').toLowerCase() === c);
+  });
+}
+renderPaintPresets();
+syncActivePreset(paintColor.value);
 
 /* map click handler */
 svg.addEventListener('click', (e) => {
@@ -2474,8 +3144,7 @@ svg.addEventListener('click', (e) => {
     const name = prompt('POI name:');
     if (!name || !name.trim()) { setMode(null); return; }
     const id = 'poi-' + Date.now().toString(36);
-    if (!window.SCENARIOS_DATA.points) window.SCENARIOS_DATA.points = [];
-    window.SCENARIOS_DATA.points.push({ id, name: name.trim(), coord: [lon, lat], icon: 'dot', scale: 1.0 });
+    currentPoints().push({ id, name: name.trim(), coord: [lon, lat], icon: 'dot', scale: 1.0 });
     renderPois();
     renderPoiEditor();
     setMode(null);
@@ -2485,7 +3154,7 @@ svg.addEventListener('click', (e) => {
     const poiTarget = e.target.closest('.poi');
     if (poiTarget && poiTarget.dataset && poiTarget.dataset.poiId) {
       const id = poiTarget.dataset.poiId;
-      window.SCENARIOS_DATA.points = (window.SCENARIOS_DATA.points || []).filter(p => p.id !== id);
+      state.scenario.points = currentPoints().filter(p => p.id !== id);
       renderPois();
       renderPoiEditor();
     }
@@ -2523,14 +3192,45 @@ svg.addEventListener('click', (e) => {
   }
 });
 
-/* Re-render the country panel when the main Editor dropdown is toggled
-   — view mode switches between read-only fields and inputs. Wired to
-   #editors-group (the outer "Editor" details) rather than the inner
-   "Live editor" sub-panel so users only need to open the top-level
-   Editor group to start editing country fields. */
-document.getElementById('editors-group').addEventListener('toggle', () => {
-  if (state.openCountryIso) renderCountryPanel();
-});
+/* Sync every edit-mode affordance with the main "Editor" dropdown
+   (#editors-group). When the outer Editor group is open, all edit UI
+   activates together — the event detail card's edit fields, the
+   "Edit scenario" button row, and the country info panel flipping
+   into editable inputs. When the group closes we collapse any in-
+   progress scenario editor form too. The inner "Live editor" sub-
+   panel no longer gates any of this — it's only used for the click-
+   to-arm modes (Paint, Add event, Add POI, Add unit, ...). */
+(function wireEditorGroupSync() {
+  const group = document.getElementById('editors-group');
+  const editScenarioRow = document.getElementById('edit-scenario-row');
+  const apply = () => {
+    const open = !!group.open;
+    // Country panel: flips between read-only labels and inputs.
+    if (state.openCountryIso) renderCountryPanel();
+    // Event detail card: show / hide the edit-fields block.
+    dEdit.classList.toggle('hidden', !open);
+    // "Edit scenario" button row above the scenario description.
+    if (editScenarioRow) editScenarioRow.classList.toggle('hidden', !open);
+    // If the user closes the whole Editor group while the scenario
+    // editor form is expanded, collapse it so they don't leave an
+    // orphaned save/cancel UI visible.
+    if (!open) closeScenarioEditor();
+  };
+  group.addEventListener('toggle', apply);
+  apply();  // establish initial state on load
+})();
+
+/* Mirror the Units-editor open state onto <body> so CSS can show a grab
+   cursor on units whenever the panel is expanded. We also cover the
+   init case (panel starts closed but if state is restored open we want
+   the class applied immediately). */
+(function wireUnitsEditorCursorAffordance() {
+  const ep = document.getElementById('unit-editor-panel');
+  if (!ep) return;
+  const sync = () => document.body.classList.toggle('units-editor-open', ep.open);
+  ep.addEventListener('toggle', sync);
+  sync();
+})();
 
 /* =====================================================================
    POI EDITOR (sidebar list — edit name / coord / icon, delete, centre)
@@ -2579,7 +3279,7 @@ poiListEl.addEventListener('click', (e) => {
   if (!p) return;
   if (e.target.classList.contains('delete-btn')) {
     if (!confirm('Delete POI "' + (p.name || 'unnamed') + '"?')) return;
-    window.SCENARIOS_DATA.points.splice(idx, 1);
+    currentPoints().splice(idx, 1);
     renderPois();
     renderPoiEditor();
     return;
@@ -2608,8 +3308,7 @@ document.getElementById('btn-poi-add-centre').addEventListener('click', () => {
   const name = prompt('POI name:');
   if (!name || !name.trim()) return;
   const id = 'poi-' + Date.now().toString(36);
-  if (!window.SCENARIOS_DATA.points) window.SCENARIOS_DATA.points = [];
-  window.SCENARIOS_DATA.points.push({ id, name: name.trim(), coord: [lon, lat], icon: 'dot', scale: 1.0 });
+  currentPoints().push({ id, name: name.trim(), coord: [lon, lat], icon: 'dot', scale: 1.0 });
   renderPois();
   renderPoiEditor();
 });
@@ -2757,14 +3456,9 @@ document.getElementById('btn-toggle-units').addEventListener('click', (e) => {
   e.target.textContent = state.showUnits ? 'Hide units' : 'Show units';
 });
 
-/* Expand edit fields when editor panel is open */
-document.getElementById('editor-panel').addEventListener('toggle', (e) => {
-  const open = e.target.open;
-  dEdit.classList.toggle('hidden', !open);
-  document.getElementById('edit-scenario-row').classList.toggle('hidden', !open);
-  // Collapse the scenario editor form if the Live Editor is closed.
-  if (!open) closeScenarioEditor();
-});
+/* (Edit-UI visibility is now synced to the outer #editors-group — see
+   wireEditorGroupSync above. The inner Live editor sub-panel no longer
+   gates edit fields.) */
 
 /* =====================================================================
    SESSION IMPORT / EXPORT / RESET
@@ -2775,7 +3469,6 @@ document.getElementById('btn-export').addEventListener('click', () => {
     highlights: state.highlights,
     currentEventIdx: state.currentEventIdx,
     scenario: state.scenario,
-    points: (window.SCENARIOS_DATA && window.SCENARIOS_DATA.points) || [],
     units:  (window.UNITS_DATA && window.UNITS_DATA.units) || [],
     countryInfo: state.countryInfo || {},
     exportedAt: new Date().toISOString()
@@ -2798,7 +3491,9 @@ document.getElementById('file-import').addEventListener('change', (e) => {
       state.scenario = p.scenario;
       state.highlights = p.highlights || {};
       state.currentEventIdx = p.currentEventIdx ?? (p.scenario.events.length ? 0 : -1);
-      if (Array.isArray(p.points)) window.SCENARIOS_DATA.points = p.points;
+      // Legacy: older sessions stored POIs at top-level. Fold them into
+      // the now-scenario-scoped points array so old exports still load.
+      if (Array.isArray(p.points) && state.scenario) state.scenario.points = p.points;
       if (Array.isArray(p.units))  window.UNITS_DATA.units = p.units;
       if (p.countryInfo && typeof p.countryInfo === 'object') state.countryInfo = p.countryInfo;
       else state.countryInfo = {};
@@ -2836,6 +3531,34 @@ if (first) { selScenario.value = first; loadScenario(first, { animate: false });
 else { setInitialView(); }
 window.addEventListener('resize', () => updateScaleBar());
 
+})();
+
+
+/* ===================================================================
+   SKIN PICKER
+   Applies body[data-skin] so the CSS palette overrides kick in.
+   Skin is a presenter choice, not scenario content — persisted in
+   localStorage only (NOT baked into exported scenario JSON) so a
+   single scenario file stays portable between audiences.
+=================================================================== */
+(function initSkinPicker(){
+  const SEL_ID = 'skin-select';
+  const STORAGE_KEY = 'ttx-skin';
+  const VALID = new Set(['default','dod','pla','cyber','ruaf','ukraf','mod','irregular']);
+  const sel = document.getElementById(SEL_ID);
+
+  let saved = 'default';
+  try { const v = localStorage.getItem(STORAGE_KEY); if (v && VALID.has(v)) saved = v; } catch (_) {}
+
+  document.body.dataset.skin = saved;
+  if (sel) {
+    sel.value = saved;
+    sel.addEventListener('change', () => {
+      const v = VALID.has(sel.value) ? sel.value : 'default';
+      document.body.dataset.skin = v;
+      try { localStorage.setItem(STORAGE_KEY, v); } catch (_) {}
+    });
+  }
 })();
 </script>
 </body>
