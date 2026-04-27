@@ -71,7 +71,25 @@
   #sidebar { background: var(--sidebar-bg); border-right: 1px solid var(--panel-border);
              overflow-y: auto; padding: 18px 18px 28px; display: flex; flex-direction: column; gap: 14px;
              position: relative; }
-  #btn-present { position: absolute; top: 14px; right: 14px; z-index: 5; }
+  /* Panel toggle buttons. Both #btn-present ("Hide panel") and
+     #sidebar-toggle ("Show panel") anchor to the same top-right
+     coordinate in the map area so one is always clickable in the
+     exact same spot — no mouse travel required. Placed ABOVE the
+     classification banner's z-index so the banner never obscures
+     them (previous bug: Show panel was behind the banner in
+     presenting mode). In normal mode Hide is visible and Show is
+     hidden; body.presenting inverts both. */
+  .panel-toggle {
+    position: absolute; top: 8px; right: 10px; z-index: 30;
+    background: var(--raised-bg); color: var(--text-primary);
+    border: 1px solid var(--btn-border); border-radius: 4px;
+    padding: 4px 10px; font-size: 12px; font-weight: 500;
+    font-family: inherit; cursor: pointer; line-height: 1.3;
+  }
+  .panel-toggle:hover { background: var(--btn-hover-bg, var(--raised-bg)); filter: brightness(0.96); }
+  body.presenting #btn-present { display: none; }
+  #sidebar-toggle { display: none; }
+  body.presenting #sidebar-toggle { display: block; }
   #map-wrap { position: relative; overflow: hidden; background: var(--ocean); }
 
   /* ---------- sidebar pieces ---------- */
@@ -253,8 +271,9 @@
                             display: flex; align-items: center; justify-content: center;
                             font-size: 13px; color: var(--text-secondary); text-align: center;
                             white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  body.presenting #sidebar-toggle { display: block; }
-  #sidebar-toggle { position: absolute; top: 14px; left: 14px; display: none; background: var(--raised-bg); border: 1px solid var(--btn-border); border-radius: 4px; padding: 6px 10px; font-size: 12px; }
+  /* #sidebar-toggle positioning + show/hide now handled alongside
+     #btn-present by the .panel-toggle rules above, so both live at
+     the same screen spot. */
 
   /* ---------- detail overlay ---------- */
   #detail { position: absolute; right: 14px; top: 14px; width: 360px; max-height: calc(100% - 28px);
@@ -415,6 +434,52 @@
      (13px font × 1.3 line-height + 8px padding). HUD lives at the
      bottom and is unaffected. */
   #detail, #country-panel { top: 38px; max-height: calc(100% - 52px); }
+
+  /* ---------- Custom base-map picker ---------- */
+  .basemap-picker { position: absolute; inset: 0; display: none;
+                    background: rgba(0,0,0,.35); z-index: 40;
+                    align-items: center; justify-content: center; padding: 18px; }
+  body.basemap-picker-open .basemap-picker { display: flex; }
+  .basemap-picker .bp-card { width: min(480px, calc(100% - 36px));
+                              background: var(--raised-bg);
+                              color: var(--text-primary);
+                              border: 1px solid var(--btn-border);
+                              border-radius: 8px; padding: 18px 20px;
+                              box-shadow: 0 12px 36px rgba(0,0,0,.22); }
+  .basemap-picker .bp-title { margin: 0 0 6px; font-size: 16px; font-weight: 600; }
+  .basemap-picker .bp-desc  { margin: 0 0 14px; font-size: 12px; line-height: 1.5;
+                              color: var(--text-muted); }
+  .basemap-picker .bp-field { display: flex; flex-direction: column; gap: 4px;
+                              margin-bottom: 10px; font-size: 12px; color: var(--text-muted);
+                              text-transform: none; letter-spacing: normal; }
+  .basemap-picker .bp-fit legend { font-size: 12px; color: var(--text-muted);
+                                    padding-bottom: 4px; }
+  .basemap-picker .bp-fit label { display: flex; align-items: flex-start; gap: 6px;
+                                   font-size: 12px; color: var(--text-primary);
+                                   padding: 2px 0; cursor: pointer; }
+  .basemap-picker .bp-fit input { margin-top: 3px; accent-color: var(--accent); }
+  .basemap-picker .bp-fit { border: 0; padding: 0; margin: 0 0 12px 0; }
+  .basemap-picker input[type=file] { padding: 6px; }
+  .basemap-picker .bp-buttons { display: flex; gap: 8px; margin-top: 6px; }
+  .basemap-picker .bp-note { margin: 8px 0 0; font-size: 11px; color: var(--text-faint);
+                              min-height: 14px; }
+  .basemap-picker .bp-note.error { color: #b03030; }
+
+  /* Hide map-related chrome when a custom image basemap is active.
+     Custom-basemap scenarios use an uploaded image as the world, so
+     Natural-Earth country paths, country labels, the country-info
+     panel, and the geopolitics toggles (which only make sense over
+     real-world geography) all get taken out of the picture. POIs,
+     pins, units and events stay visible — they're scenario content,
+     not geography. */
+  body.custom-basemap #ocean-rect { display: none; }
+  body.custom-basemap #g-countries,
+  body.custom-basemap #g-countries-west,
+  body.custom-basemap #g-countries-east,
+  body.custom-basemap #g-country-labels { display: none; }
+  body.custom-basemap .world-ghost[href="#g-country-labels"] { display: none; }
+  body.custom-basemap #country-panel { display: none; }
+  body.custom-basemap #geopolitics-panel { display: none; }
 
   /* ---------- Dice roller ----------
      Mini tool docked between Events and View in the sidebar. The
@@ -738,7 +803,6 @@
 
 <div id="app">
   <aside id="sidebar">
-    <button class="btn" id="btn-present">Hide</button>
     <div class="brand">Tabletop Wargame</div>
     <h1 class="title">Asia Pacific Visualiser</h1>
 
@@ -850,6 +914,15 @@
                   style="font-variant-numeric:tabular-nums; font-size:11px; color:#3a3a3a; min-width:38px; text-align:right;">1.00x</span>
           </div>
         </label>
+        <label class="field checkbox-field" style="flex-direction:row; align-items:center; gap:8px;">
+          <input type="checkbox" id="dynamic-scale" style="margin:0; flex:0 0 auto;">
+          <span style="font-size:12px; font-weight:500;">Dynamic scale</span>
+        </label>
+        <p class="hint" style="margin:-2px 0 0 22px; font-size:11px; color:var(--text-muted); line-height:1.4;">
+          Pins, POIs, units and country labels counter-scale against
+          zoom — dense clusters (e.g. Taiwan–Hong Kong) stay legible
+          when zoomed in instead of bloating to cover each other.
+        </p>
       </details>
 
       <details class="panel" id="poi-editor-panel">
@@ -893,15 +966,21 @@
           </div>
         </label>
         <p class="mode-hint" id="mode-hint">Click a mode above, then click the map.</p>
-
-        <h2 style="margin-top:10px">Session</h2>
-        <div class="btn-row">
-          <button class="btn" id="btn-export">Export JSON</button>
-          <button class="btn" id="btn-import">Import JSON</button>
-          <button class="btn" id="btn-reset">Reset scenario</button>
-        </div>
-        <input type="file" id="file-import" accept=".json" class="hidden">
       </details>
+    </details>
+
+    <!-- Session lives in its own collapsible panel OUTSIDE the Editor
+         group so Export/Import/Reset remain one click away no matter
+         which editor the presenter has open (or if they've collapsed
+         the Editor group entirely). -->
+    <details class="panel" id="session-panel">
+      <summary>Session</summary>
+      <div class="btn-row" style="margin-top:6px;">
+        <button class="btn" id="btn-export">Export JSON</button>
+        <button class="btn" id="btn-import">Import JSON</button>
+        <button class="btn" id="btn-reset">Reset scenario</button>
+      </div>
+      <input type="file" id="file-import" accept=".json" class="hidden">
     </details>
 
     <p style="font-size:11px;color:#8a857a;margin-top:auto;">
@@ -912,7 +991,13 @@
   </aside>
 
   <main id="map-wrap">
-    <button id="sidebar-toggle">Show panel</button>
+    <!-- Hide / Show panel buttons. Both anchored to the same spot
+         (top-right of the map area) so clicking one reveals the
+         other in place — no mouse travel. `body.presenting` swaps
+         which of the two is visible. Both carry z-index above the
+         classification banner so they're always clickable. -->
+    <button id="btn-present" class="panel-toggle">Hide panel</button>
+    <button id="sidebar-toggle" class="panel-toggle">Show panel</button>
     <!-- Classification banner sits above the map area so it appears on
          screenshots / presenter-mode captures. Read-only by default;
          becomes editable when the Editor dropdown is open. Its colour
@@ -1113,26 +1198,38 @@
            so zoomed-in country paths and the ocean fill never spill past
            the black border. -->
       <g clip-path="url(#map-clip)">
-        <rect class="ocean" x="0" y="0" width="1950" height="725"></rect>
+        <rect class="ocean" id="ocean-rect" x="0" y="0" width="1950" height="725"></rect>
         <g id="viewport">
+          <!-- Custom-basemap image. Rendered first inside #viewport so
+               it sits beneath every overlay (pins, POIs, units, events,
+               country layers when applicable). Hidden by default; shown
+               when state.scenario.basemap.type === 'image' and a dataUrl
+               has been loaded. preserveAspectRatio is driven by the
+               scenario's basemap.fit ('contain' | 'stretch'). -->
+          <image id="basemap-image" x="0" y="0" width="1950" height="725"
+                 preserveAspectRatio="xMidYMid meet" style="display:none;"></image>
           <!-- East-west map wrap: country PATHS are rendered as 3 real DOM
-               copies (west ghost at x=-1950, central at 0, east ghost at
-               +1950). Real copies (not <use>) are required so hover/click
-               actually fire when the mouse is over Japan-coming-in-from-the-
-               west or USA-coming-in-from-the-east. clampTransform() keeps
-               tx in (-MAP_W/2, MAP_W/2] so the central copy is always the
-               most interactive, but the ghost copies are fully wired too.
+               copies (west ghost at x=-1800, central at 0, east ghost at
+               +1800). The ghost offset matches the earth's 360° physical
+               period (= 1800 map units at 5 px/°), NOT the 1950-unit
+               viewBox, so the ghosts line up with the central copy's
+               content when panned across the seam. Real copies (not
+               <use>) are required so hover/click actually fire when the
+               mouse is over Japan-coming-in-from-the-west or USA-coming-
+               in-from-the-east. clampTransform() wraps tx on the same
+               1800-unit period so the central copy is always the most
+               interactive, but the ghost copies are fully wired too.
                Country LABELS stay as <use> ghosts — they don't need
                interaction and using <use> avoids duplicating ~180 text
                nodes three times. POIs, units, events and pins intentionally
                stay single-copy — the user's scenario data should appear in
                exactly one canonical spot. -->
-          <g id="g-countries-west" class="g-countries-copy" transform="translate(-1950,0)"></g>
+          <g id="g-countries-west" class="g-countries-copy" transform="translate(-1800,0)"></g>
           <g id="g-countries"></g>
-          <g id="g-countries-east" class="g-countries-copy" transform="translate(1950,0)"></g>
+          <g id="g-countries-east" class="g-countries-copy" transform="translate(1800,0)"></g>
           <g id="g-country-labels"></g>
-          <use href="#g-country-labels" x="-1950" class="world-ghost" pointer-events="none"></use>
-          <use href="#g-country-labels" x="1950"  class="world-ghost" pointer-events="none"></use>
+          <use href="#g-country-labels" x="-1800" class="world-ghost" pointer-events="none"></use>
+          <use href="#g-country-labels" x="1800"  class="world-ghost" pointer-events="none"></use>
           <g id="g-pois"></g>
           <g id="g-poi-labels"></g>
           <g id="g-units"></g>
@@ -1167,6 +1264,31 @@
       <button class="btn" id="pn-prev">&larr;</button>
       <div class="event-label" id="pn-label">— no event —</div>
       <button class="btn" id="pn-next">&rarr;</button>
+    </div>
+
+    <!-- Custom-map upload panel. Shown on top of the map area when a
+         custom-map scenario is loaded without a configured basemap
+         image, or when the user clicks "Replace base map" in the
+         Editor sub-panel. Hidden otherwise. -->
+    <div id="basemap-picker" class="basemap-picker" aria-hidden="true">
+      <div class="bp-card">
+        <h3 class="bp-title">Custom base map</h3>
+        <p class="bp-desc">Pick an image from your computer. It will replace the world map inside this scenario — country borders, labels and geopolitics toggles are hidden while it's active. The file's name is referenced in the exported JSON so you can keep the file alongside the scenario; the image data itself is not embedded.</p>
+        <label class="bp-field">
+          <span>Image file</span>
+          <input type="file" id="bp-file" accept="image/*">
+        </label>
+        <fieldset class="bp-field bp-fit">
+          <legend>How to fit the image to the map area?</legend>
+          <label><input type="radio" name="bp-fit" value="contain" checked> <strong>Retain aspect ratio</strong> — letterbox, no distortion</label>
+          <label><input type="radio" name="bp-fit" value="stretch"> <strong>Stretch to screen</strong> — fill the whole map, may distort</label>
+        </fieldset>
+        <div class="bp-buttons">
+          <button class="btn primary" id="bp-confirm" disabled>Use this image</button>
+          <button class="btn" id="bp-cancel">Cancel</button>
+        </div>
+        <p class="bp-note" id="bp-note"></p>
+      </div>
     </div>
 
     <div id="detail">
@@ -1405,6 +1527,15 @@ window.SCENARIOS_DATA = {
       highlights: {},
       events: [],
       points: []
+    },
+    {
+      id: "custom-map",
+      title: "Custom Map",
+      description: "Replace the world map with an uploaded image (e.g. a Taiwan map, a Ukrainian front line, a regional topo). Drop pins, units and events as normal — their coordinates become local to the image. Country layers, borders and geopolitics toggles are hidden.",
+      highlights: {},
+      events: [],
+      points: [],
+      basemap: { type: 'image', src: null, fit: 'contain', width: 0, height: 0 }
     }
   ]
 };
@@ -1437,6 +1568,14 @@ window.IMAGES = {
 const MAP_W = 1950, MAP_H = 725;
 const LON_MIN = -30, LON_MAX = 360;
 const LAT_MIN = -60, LAT_MAX = 85;
+// Earth's physical longitudinal period in map units. The projection
+// includes 30° of ocean padding beyond a full world (MAP_W = 390° × 5
+// px/°), but panning/wrapping and the east/west ghost copies should
+// cycle every *actual* 360° so a feature in the central copy lines up
+// with its ghost counterpart. Using MAP_W instead would leave a 30°
+// mismatch that made continents look too far apart across the Atlantic
+// at zoom-out.
+const WORLD_PERIOD = 360 * (MAP_W / (LON_MAX - LON_MIN)); // = 1800
 const project = ([lon, lat]) => [
   (lon - LON_MIN) / (LON_MAX - LON_MIN) * MAP_W,
   (LAT_MAX - lat) / (LAT_MAX - LAT_MIN) * MAP_H
@@ -1869,37 +2008,57 @@ function renderPois() {
   gPois.innerHTML = '';
   gPoiLabels.innerHTML = '';
   const pts = currentPoints();
+  const SVGNS = 'http://www.w3.org/2000/svg';
   for (const p of pts) {
     const [x, y] = project(p.coord);
     const iconKey = (p.icon && POI_ICON_KEYS.has(p.icon)) ? p.icon : 'dot';
     const s = clampPoiScale(p.scale);
+
+    // Two-level group: outer translate in world coords, inner holds
+    // the glyph and carries the dynamic-scale counter-scale (updated
+    // in applyDynamicScale()). The glyph is drawn at local (0,0) so
+    // scaling the inner group doesn't drift.
+    const wrap = document.createElementNS(SVGNS, 'g');
+    wrap.setAttribute('class', 'poi-wrap');
+    wrap.setAttribute('transform', `translate(${x} ${y})`);
+    wrap.dataset.poiId = p.id;
+    const inner = document.createElementNS(SVGNS, 'g');
+    inner.setAttribute('class', 'poi-inner');
+
     let el;
     if (iconKey === 'dot') {
-      el = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      el.setAttribute('cx', x); el.setAttribute('cy', y); el.setAttribute('r', POI_DOT_R * s);
+      el = document.createElementNS(SVGNS, 'circle');
+      el.setAttribute('cx', 0); el.setAttribute('cy', 0); el.setAttribute('r', POI_DOT_R * s);
       el.setAttribute('class', 'poi');
     } else {
       const size = POI_ICON_SIZE * s;
-      el = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+      el = document.createElementNS(SVGNS, 'use');
       el.setAttribute('href', '#poi-' + iconKey);
-      el.setAttribute('x', x - size / 2);
-      el.setAttribute('y', y - size / 2);
+      el.setAttribute('x', -size / 2);
+      el.setAttribute('y', -size / 2);
       el.setAttribute('width',  size);
       el.setAttribute('height', size);
       el.setAttribute('class', 'poi poi-icon');
     }
     el.dataset.poiId = p.id;
-    const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+    const title = document.createElementNS(SVGNS, 'title');
     title.textContent = p.name;
     el.appendChild(title);
-    gPois.appendChild(el);
-    // Label offset from the POI icon. Small extra padding past the
-    // icon's edge so the text doesn't kiss the glyph's outline —
-    // bumped slightly from the original 0.6 for a touch more
-    // breathing room at all zoom levels.
+    inner.appendChild(el);
+    wrap.appendChild(inner);
+    gPois.appendChild(wrap);
+
+    // Label — same two-level structure, so it tracks the POI's dynamic
+    // scale without drifting. Text placed relative to the wrap origin.
     const labelOffset = iconKey === 'dot' ? (2.3 * s) : (POI_ICON_SIZE * s / 2 + 1.4);
-    const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    t.setAttribute('x', x + labelOffset); t.setAttribute('y', y + 1.0 * s);
+    const lwrap = document.createElementNS(SVGNS, 'g');
+    lwrap.setAttribute('class', 'poi-label-wrap');
+    lwrap.setAttribute('transform', `translate(${x} ${y})`);
+    lwrap.dataset.poiId = p.id;
+    const linner = document.createElementNS(SVGNS, 'g');
+    linner.setAttribute('class', 'poi-label-inner');
+    const t = document.createElementNS(SVGNS, 'text');
+    t.setAttribute('x', labelOffset); t.setAttribute('y', 1.0 * s);
     t.setAttribute('class', 'poi-label');
     // Inline style beats the .poi-label { font-size: 3.2px } CSS rule —
     // SVG presentation attributes lose to stylesheet rules, so we have
@@ -1907,8 +2066,11 @@ function renderPois() {
     t.style.fontSize = (3.2 * s) + 'px';
     t.dataset.poiId = p.id;
     t.textContent = p.name;
-    gPoiLabels.appendChild(t);
+    linner.appendChild(t);
+    lwrap.appendChild(linner);
+    gPoiLabels.appendChild(lwrap);
   }
+  applyDynamicScale();
 }
 
 /* ------ Sidebar POI editor ----------------------------------------- */
@@ -2420,6 +2582,12 @@ function renderUnits() {
     g.setAttribute('class', 'unit');
     g.setAttribute('transform', `translate(${x} ${y}) scale(${s})`);
     g.dataset.unitId = u.id;
+    // Stash pose + base scale so applyDynamicScale() can rewrite the
+    // transform to include the dynamic counter-scale without having to
+    // reparse it.
+    g.dataset.tx = x;
+    g.dataset.ty = y;
+    g.dataset.baseScale = s;
 
     const frame = document.createElementNS(SVGNS, 'path');
     frame.setAttribute('d', unitFramePath(affKey));
@@ -2461,19 +2629,33 @@ function renderUnits() {
     gUnits.appendChild(g);
 
     if (u.label) {
+      // Two-level group so the label participates in dynamic-scale
+      // just like the unit glyph. Outer translate in world coords,
+      // inner carries the counter-scale.
+      const lwrap = document.createElementNS(SVGNS, 'g');
+      lwrap.setAttribute('class', 'unit-label-wrap');
+      lwrap.setAttribute('transform', `translate(${x} ${y})`);
+      lwrap.dataset.unitId = u.id;
+      lwrap.dataset.tx = x;
+      lwrap.dataset.ty = y;
+      const linner = document.createElementNS(SVGNS, 'g');
+      linner.setAttribute('class', 'unit-label-inner');
       const t = document.createElementNS(SVGNS, 'text');
       // Label offset scales with the unit so it always sits just past the frame edge.
-      t.setAttribute('x', x + hw * s + 0.8);
-      t.setAttribute('y', y + 1.0 * s);
+      t.setAttribute('x', hw * s + 0.8);
+      t.setAttribute('y', 1.0 * s);
       t.setAttribute('class', 'unit-label');
       // Inline style is required — SVG presentation attributes lose to
       // stylesheet rules, and .unit-label has a fixed font-size in CSS.
       t.style.fontSize = (3.0 * s) + 'px';
       t.dataset.unitId = u.id;
       t.textContent = u.label;
-      gUnitLabels.appendChild(t);
+      linner.appendChild(t);
+      lwrap.appendChild(linner);
+      gUnitLabels.appendChild(lwrap);
     }
   }
+  applyDynamicScale();
 }
 
 /* ------ Sidebar unit editor ---------------------------------------- */
@@ -2568,6 +2750,13 @@ const state = {
   showEvents: true,
   showUnits: true,
   showLabels: true,
+  // When true, pins, POIs, units and country labels counter-scale
+  // against the viewport zoom so they stay roughly the same size on
+  // screen regardless of zoom level. Keeps dense clusters (e.g.
+  // Taiwan Strait cities) legible when zoomed in. Persisted in
+  // localStorage under ttx-dynamic-scale — it's a presenter preference,
+  // not scenario content, so it isn't baked into exports.
+  dynamicScale: false,
   transform: { tx: 0, ty: 0, s: 1 },
   countryInfo: {},    // iso_a3 -> { capital, population, gdp, ... } overrides on top of COUNTRY_INFO_DEFAULTS
   openCountryIso: null,
@@ -2595,19 +2784,40 @@ function clampTransform(t) {
   t.s = Math.max(MIN_SCALE, Math.min(MAX_SCALE, t.s));
   const mapW = MAP_W * t.s;
   const mapH = MAP_H * t.s;
-  // Horizontal: wrap tx so the map loops east-west. Two <use> ghosts at
-  // world-x = ±MAP_W mirror the country paths & labels on either side of
-  // the central copy, so the user can drag indefinitely in either
-  // direction and the seam is invisible.
-  //
-  // We normalise tx into the symmetric range (-mapW/2, mapW/2], which
-  // keeps the interactive central copy maximally in view — that matters
-  // because <use> ghosts are pointer-events:none, so country clicks only
-  // register on the real paths. Dragging pushes central aside by at most
-  // half a world; the corresponding ghost fills the gap. At tx=0 central
-  // exactly fills the viewBox and no ghost is visible.
-  const half = mapW / 2;
-  t.tx = (((t.tx + half) % mapW) + mapW) % mapW - half;
+  // Custom-image basemaps have no east/west ghost copies (the world-map
+  // path ghosts are hidden via CSS and there's only a single <image>
+  // element), so the usual horizontal WRAP would teleport the image
+  // off-frame as soon as the user pans/zooms past the asymmetric
+  // (-period/2, period/2] boundary — which is why zooming toward the
+  // right edge of a custom map sometimes makes it disappear. Clamp
+  // instead, using MAP_W (the viewBox width) since the whole image
+  // spans the full frame.
+  const customBasemap = !!(state.scenario && state.scenario.basemap
+                            && state.scenario.basemap.type === 'image');
+  if (customBasemap) {
+    if (mapW >= MAP_W) {
+      t.tx = Math.max(MAP_W - mapW, Math.min(0, t.tx));
+    } else {
+      t.tx = (MAP_W - mapW) / 2;
+    }
+  } else {
+    // World-map mode: wrap tx so the map loops east-west. Two real
+    // DOM ghosts at world-x = ±WORLD_PERIOD (= 360° × 5 px/°, NOT the
+    // 390° viewBox width) mirror the country paths & labels on either
+    // side of the central copy, so the user can drag indefinitely in
+    // either direction and the seam is invisible.
+    //
+    // We normalise tx into the symmetric range (-period/2, period/2],
+    // which keeps the interactive central copy maximally in view — that
+    // matters because <use> ghosts are pointer-events:none, so country
+    // clicks only register on the real paths. Dragging pushes central
+    // aside by at most half a world; the corresponding ghost fills the
+    // gap. At tx=0 central exactly fills the viewBox (with 30° of
+    // padding redundant at the western edge) and no ghost is visible.
+    const period = WORLD_PERIOD * t.s;
+    const half = period / 2;
+    t.tx = (((t.tx + half) % period) + period) % period - half;
+  }
   // Vertical still clamps — no polar wrap, and the map has real top/bottom
   // edges (Antarctica / Arctic ocean) we don't want to scroll past.
   if (mapH >= MAP_H) {
@@ -2622,7 +2832,66 @@ function applyTransform() {
   clampTransform(state.transform);
   const { tx, ty, s } = state.transform;
   viewport.setAttribute('transform', `translate(${tx} ${ty}) scale(${s})`);
+  applyDynamicScale();
   updateScaleBar();
+}
+
+/* Dynamic scale — counter-scale pin markers, pin labels, POIs, POI
+   labels, unit glyphs, unit labels and country labels against the
+   current zoom when state.dynamicScale is ON. The result: these items
+   stay at a consistent readable size regardless of zoom, so a cluster
+   of cities (Taipei/Kaohsiung/Kinmen/HK/Macau) doesn't bloat into an
+   illegible blob when the presenter zooms in. When OFF, items scale
+   with the viewport as normal.
+
+   Implementation: each renderable has a (translate-only) outer group
+   positioning it in world coords, and an inner group that carries
+   this counter-scale. Units keep their per-item base scale (the unit
+   scale slider) in data-baseScale so we can multiply, not replace.
+   Country labels are sized via the --cl-size CSS variable on the
+   viewport; we fold the dynamic factor into that.
+
+   The counter formula is `DYN_ANCHOR / s` rather than pure `1 / s`,
+   because the base SVG sizes (pin r=2.2, label font=3.4px, etc.)
+   were tuned to look right at the focus-event zoom of s≈4 — NOT at
+   s=1. Using pure `1/s` would lock items at their s=1 size forever,
+   which is barely visible; anchoring to s=4 locks them at their
+   "event focus" size so dense clusters remain readable at every
+   zoom the presenter pans to. */
+const DYN_ANCHOR = 4;
+function applyDynamicScale() {
+  const s = state.transform.s || 1;
+  const invS = state.dynamicScale ? (DYN_ANCHOR / s) : 1;
+  const scaleAttr = 'scale(' + invS + ')';
+  // Pin markers + pin labels: outer has translate(x y), inner carries
+  // the scale. Using getElementsByClassName for zero allocation on the
+  // hot path (applyTransform fires on every pan/zoom frame).
+  const pinInners = gPins.getElementsByClassName('pin-inner');
+  for (let i = 0; i < pinInners.length; i++) pinInners[i].setAttribute('transform', scaleAttr);
+  const pinLabelInners = gPinLabels.getElementsByClassName('pin-label-inner');
+  for (let i = 0; i < pinLabelInners.length; i++) pinLabelInners[i].setAttribute('transform', scaleAttr);
+  // POIs + POI labels — same two-level structure.
+  const poiInners = gPois.getElementsByClassName('poi-inner');
+  for (let i = 0; i < poiInners.length; i++) poiInners[i].setAttribute('transform', scaleAttr);
+  const poiLabelInners = gPoiLabels.getElementsByClassName('poi-label-inner');
+  for (let i = 0; i < poiLabelInners.length; i++) poiLabelInners[i].setAttribute('transform', scaleAttr);
+  // Units: outer group already uses translate+scale (per-unit base
+  // scale). Multiply by invS rather than replacing.
+  const units = gUnits.getElementsByClassName('unit');
+  for (let i = 0; i < units.length; i++) {
+    const u = units[i];
+    const tx = u.dataset.tx, ty = u.dataset.ty;
+    const base = Number(u.dataset.baseScale) || 1;
+    if (tx !== undefined && ty !== undefined) {
+      u.setAttribute('transform', 'translate(' + tx + ' ' + ty + ') scale(' + (base * invS) + ')');
+    }
+  }
+  // Unit labels — inner group carries the scale just like POI labels.
+  const unitLabelInners = gUnitLabels.getElementsByClassName('unit-label-inner');
+  for (let i = 0; i < unitLabelInners.length; i++) unitLabelInners[i].setAttribute('transform', scaleAttr);
+  // Country labels — driven by --cl-size on the viewport (set by
+  // applyCountryLabelScale). Re-apply so it folds in the current invS.
+  if (typeof applyCountryLabelScale === 'function') applyCountryLabelScale();
 }
 
 /* ---------- scale bar ---------- */
@@ -2769,19 +3038,21 @@ window.addEventListener('mousemove', (e) => {
   if (unitDrag) {
     const [curLon, curLat] = screenToLonLat(e.clientX, e.clientY);
     let dLon = curLon - unitDrag.pointerStart[0];
-    // Seam-safe delta: both pointer lons are canonical (wrapped into
-    // [LON_MIN, LON_MAX)); when the cursor crosses the map seam the raw
-    // diff jumps by ±390°, so fold it back into [-half, +half].
-    const lonRange = LON_MAX - LON_MIN;
-    const halfR = lonRange / 2;
-    dLon = ((dLon + halfR) % lonRange + lonRange) % lonRange - halfR;
+    // Seam-safe delta: when the cursor crosses the map's east-west
+    // wrap the raw diff jumps by ±360° (earth's physical period, NOT
+    // the 390° projection span); fold it back into [-180, +180].
+    const PHYSICAL_LON = 360;
+    const halfR = PHYSICAL_LON / 2;
+    dLon = ((dLon + halfR) % PHYSICAL_LON + PHYSICAL_LON) % PHYSICAL_LON - halfR;
     const dLat = curLat - unitDrag.pointerStart[1];
     let newLon = unitDrag.unitStart[0] + dLon;
-    // Keep the unit's stored lon inside the canonical map range so it
-    // sits on the central copy (renderUnits only draws the canonical
-    // position — which is fine, since units aren't in the world-ghost
-    // mirrors).
-    newLon = ((newLon - LON_MIN) % lonRange + lonRange) % lonRange + LON_MIN;
+    // Keep the unit's stored lon inside the canonical projection range
+    // [LON_MIN, LON_MAX) so it sits on the central copy (renderUnits
+    // only draws the canonical position — units aren't world-ghost
+    // mirrors). Wrap on the 360° physical period rather than the 390°
+    // projection span so lons outside [LON_MIN, LON_MAX) round-trip to
+    // the right map location, not 30° off.
+    newLon = ((newLon - LON_MIN) % PHYSICAL_LON + PHYSICAL_LON) % PHYSICAL_LON + LON_MIN;
     let newLat = unitDrag.unitStart[1] + dLat;
     // Clamp to the map's visible lat window — no point letting units
     // drift into the Arctic cutoff above/below the projection bounds.
@@ -2888,12 +3159,16 @@ function screenToLonLat(clientX, clientY) {
   const mx = (sx - tx) / s, my = (sy - ty) / s;
   let lon = LON_MIN + mx / MAP_W * (LON_MAX - LON_MIN);
   const lat = LAT_MAX - my / MAP_H * (LAT_MAX - LAT_MIN);
-  // Clicks on a ghost copy (the west/east <use> mirrors that make east-west
-  // panning loop) land outside [LON_MIN, LON_MAX); wrap back to the
-  // canonical range so "Add POI at click" etc. drop items at the right
-  // central-copy longitude regardless of which mirror the user clicked.
-  const lonRange = LON_MAX - LON_MIN;
-  lon = ((lon - LON_MIN) % lonRange + lonRange) % lonRange + LON_MIN;
+  // Clicks on a ghost copy (the west/east mirrors at ±WORLD_PERIOD that
+  // make east-west panning loop) land outside the projection range;
+  // wrap back to [LON_MIN, LON_MAX) so "Add POI at click" drops items
+  // at the right central-copy longitude regardless of which mirror the
+  // user clicked. The wrap uses the 360° physical period (NOT the 390°
+  // projection span) because the ghosts are translated by WORLD_PERIOD
+  // = 360° × 5 px/°; using 390° here would mis-wrap clicks on the
+  // ghost copies by 30°.
+  const PHYSICAL_LON = 360;
+  lon = ((lon - LON_MIN) % PHYSICAL_LON + PHYSICAL_LON) % PHYSICAL_LON + LON_MIN;
   return [lon, lat];
 }
 
@@ -2904,10 +3179,34 @@ function loadScenario(id, { animate = true } = {}) {
   const src = window.SCENARIOS_DATA.scenarios.find(s => s.id === id);
   if (!src) return;
   // Deep clone so live edits don't mutate the on-disk defaults.
+  // Remember where we came from so the basemap picker's Cancel
+  // button can bounce us back (a custom-map scenario with no image
+  // hydrated is a dead-end otherwise).
+  if (state.scenarioId && state.scenarioId !== id) {
+    state.previousScenarioId = state.scenarioId;
+  }
   state.scenarioId = id;
   state.scenario = JSON.parse(JSON.stringify(src));
   state.highlights = { ...(state.scenario.highlights || {}) };
   state.currentEventIdx = state.scenario.events.length ? 0 : -1;
+  // Dismiss any top-right detail card from the scenario we just left —
+  // otherwise switching to (say) a blank canvas or custom-map scenario
+  // would leave the previous scenario's "PLA Rocket Forces Exercises"
+  // card sitting over an unrelated image. If the new scenario has its
+  // own events, the focusEvent call below re-opens the card for event 0.
+  // Country-info briefings are likewise scenario-adjacent — close them
+  // here for the same reason.
+  const detailEl = document.getElementById('detail');
+  if (detailEl) detailEl.classList.remove('open');
+  if (state.openCountryIso && typeof closeCountryPanel === 'function') {
+    closeCountryPanel();
+  }
+  // Apply the basemap BEFORE country/POI/pin rendering so the correct
+  // chrome is hidden up-front and the transform target below (zoom to
+  // fit) doesn't chase the wrong frame. applyBasemap itself may prompt
+  // the user for an image file if the scenario declares a custom
+  // basemap that hasn't been hydrated yet.
+  applyBasemap(state.scenario);
   repaintHighlights();
   renderPins();
   renderPois();
@@ -2918,7 +3217,67 @@ function loadScenario(id, { animate = true } = {}) {
   // pick Taiwan Strait, South America when they pick an Americas scenario,
   // etc. focusEvent above runs with animate=false so it doesn't touch the
   // transform; zoomToScenario below is the authoritative framing call.
-  zoomToScenario(animate ? 700 : 0);
+  // For custom-image basemaps without coordinate anchors yet, just reset
+  // to fit-view so the whole image is in frame.
+  if (isCustomBasemapActive() && !(state.scenario.events || []).length && !(state.scenario.points || []).length) {
+    fitView();
+  } else {
+    zoomToScenario(animate ? 700 : 0);
+  }
+}
+
+/* ---- Custom basemap -----------------------------------------------
+   applyBasemap inspects state.scenario.basemap and toggles body /
+   SVG state accordingly:
+     - basemap.type === 'image' with hydrated dataUrl → render image,
+       hide country chrome, suppress overlay ghosts.
+     - basemap.type === 'image' WITHOUT dataUrl → open the picker
+       dialog so the user can supply a file. On the first load of
+       exported scenarios, the dataUrl is absent (we don't embed it)
+       so this is the re-rehydration path too.
+     - basemap absent (normal world-map scenarios) → default chrome.
+*/
+function isCustomBasemapActive() {
+  const bm = state.scenario && state.scenario.basemap;
+  return !!(bm && bm.type === 'image' && bm.dataUrl);
+}
+function applyBasemap(scenario) {
+  const bm = scenario && scenario.basemap;
+  const imgEl = document.getElementById('basemap-image');
+  if (!bm || bm.type !== 'image') {
+    // Standard world map.
+    document.body.classList.remove('custom-basemap');
+    document.body.classList.remove('basemap-picker-open');
+    if (imgEl) { imgEl.setAttribute('href', ''); imgEl.style.display = 'none'; }
+    return;
+  }
+  document.body.classList.add('custom-basemap');
+  if (bm.dataUrl) {
+    if (imgEl) {
+      imgEl.setAttribute('href', bm.dataUrl);
+      imgEl.setAttribute('preserveAspectRatio',
+        bm.fit === 'stretch' ? 'none' : 'xMidYMid meet');
+      imgEl.style.display = '';
+    }
+    document.body.classList.remove('basemap-picker-open');
+  } else {
+    // No image loaded yet — prompt the user to pick one.
+    if (imgEl) { imgEl.style.display = 'none'; }
+    openBasemapPicker();
+  }
+}
+
+function openBasemapPicker() {
+  document.body.classList.add('basemap-picker-open');
+  const fileEl = document.getElementById('bp-file');
+  const confirmEl = document.getElementById('bp-confirm');
+  const noteEl = document.getElementById('bp-note');
+  if (fileEl) fileEl.value = '';
+  if (confirmEl) confirmEl.disabled = true;
+  if (noteEl) { noteEl.textContent = ''; noteEl.classList.remove('error'); }
+}
+function closeBasemapPicker() {
+  document.body.classList.remove('basemap-picker-open');
 }
 
 /* Fit the viewport around everything "interesting" in the current scenario:
@@ -2928,6 +3287,25 @@ function loadScenario(id, { animate = true } = {}) {
    anchors (e.g. the empty sandbox). */
 function zoomToScenario(duration = 700) {
   if (!state.scenario) return;
+
+  const applyTarget = (target) => {
+    if (duration > 0) animateTransform(target, duration);
+    else { state.transform = target; applyTransform(); }
+  };
+
+  // Blank Canvas: present the whole globe framed like a classic
+  // Atlantic-centred world map — USA on the left, Japan on the right,
+  // the Atlantic running down the middle. The projection is Pacific-
+  // centred, so we pan by half the physical period (WORLD_PERIOD / 2
+  // = 180°) which puts lon=0 at screen-centre. USA then reads in via
+  // the west ghost on the left half and Japan sits on the right half
+  // via the east ghost (or the central copy, depending on where the
+  // clampTransform wrap lands tx).
+  if (state.scenario.id === 'blank') {
+    applyTarget(clampTransform({ s: MIN_SCALE, tx: WORLD_PERIOD / 2, ty: 0 }));
+    return;
+  }
+
   // Events are the scenario's focal action, so we frame around them first.
   // Highlights are only used as a fallback when a scenario has no events —
   // otherwise an ally country highlighted far from the action (e.g. AUS in
@@ -2942,11 +3320,6 @@ function zoomToScenario(duration = 700) {
       if (countryCentroid[iso]) pts.push(countryCentroid[iso]);
     }
   }
-
-  const applyTarget = (target) => {
-    if (duration > 0) animateTransform(target, duration);
-    else { state.transform = target; applyTransform(); }
-  };
 
   if (pts.length === 0) {
     // Sandbox / empty scenarios — drop the user back on APAC.
@@ -3011,15 +3384,24 @@ function renderPins() {
     const isCurrent = i === state.currentEventIdx;
 
     // --- Marker (ring + core) lives in #g-pins ---
+    // Two-level group structure: the outer .pin handles positioning
+    // (translate(x y) in world coords) and event wiring, the inner
+    // .pin-inner holds the visuals and carries the dynamic-scale
+    // counter-scale (updated in applyTransform). The CSS pulse
+    // animation keyframes `r: 2.2 → 6.5` live on .pin .outer circle,
+    // so the pulse scales with the inner group too — no special case.
     const marker = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     marker.setAttribute('class', 'pin' + (isCurrent ? ' current' : ''));
     marker.setAttribute('transform', `translate(${x} ${y})`);
     marker.dataset.idx = i;
+    const markerInner = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    markerInner.setAttribute('class', 'pin-inner');
     const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     ring.setAttribute('class', 'outer'); ring.setAttribute('r', 2.2);
     const core = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     core.setAttribute('class', 'inner'); core.setAttribute('r', 1.6);
-    marker.appendChild(ring); marker.appendChild(core);
+    markerInner.appendChild(ring); markerInner.appendChild(core);
+    marker.appendChild(markerInner);
     marker.addEventListener('click', (e) => {
       e.stopPropagation();
       if (dragDidMove) return;
@@ -3062,6 +3444,11 @@ function renderPins() {
     labelG.setAttribute('class', 'pin-label-group' + (isCurrent ? ' current' : ''));
     labelG.setAttribute('transform', `translate(${x} ${y})`);
     labelG.dataset.idx = i;
+    // Same two-level structure as the marker: outer positions, inner
+    // carries the dynamic-scale counter-scale so the bg rect + text
+    // shrink together.
+    const labelInner = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    labelInner.setAttribute('class', 'pin-label-inner');
     const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     bg.setAttribute('class', 'pin-label-bg');
     const lbl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -3071,7 +3458,8 @@ function renderPins() {
     // the ring so the two don't share pixels on the active pin.
     lbl.setAttribute('y', -4.8);
     lbl.textContent = (ev.time ? ev.time + ' — ' : '') + ev.title;
-    labelG.appendChild(bg); labelG.appendChild(lbl);
+    labelInner.appendChild(bg); labelInner.appendChild(lbl);
+    labelG.appendChild(labelInner);
     gPinLabels.appendChild(labelG);
 
     // Size the background once text is attached & laid out.
@@ -3089,6 +3477,7 @@ function renderPins() {
     marker.addEventListener('mouseenter', () => labelG.classList.add('hovered'));
     marker.addEventListener('mouseleave', () => labelG.classList.remove('hovered'));
   });
+  applyDynamicScale();
 }
 
 function focusEvent(i, animate = true) {
@@ -3388,21 +3777,48 @@ document.getElementById('btn-toggle-pinlabels').addEventListener('click', (e) =>
 
 /* Country-label size slider. Drives a CSS custom property on #viewport,
    which .country-label reads via var(--cl-size). Inherited through the
-   <use> ghost copies so all three renderings stay in sync. */
+   <use> ghost copies so all three renderings stay in sync.
+   The size folds in (a) the user's slider choice and (b) the dynamic-
+   scale inverse-zoom factor when state.dynamicScale is on — so at high
+   zoom the labels shrink to stay ~constant on screen instead of
+   growing to the size of a continent. */
 const COUNTRY_LABEL_BASE_PX = 2.75;
 const countryLabelScale = document.getElementById('country-label-scale');
 const countryLabelScaleDisplay = document.getElementById('country-label-scale-display');
+function applyCountryLabelScale() {
+  const v = countryLabelScale ? (Number(countryLabelScale.value) || 1) : 1;
+  const s = (state && state.transform && state.transform.s) || 1;
+  // Match applyDynamicScale's anchor — so country labels behave the
+  // same way as pins/POIs/units when dynamic scale is on.
+  const dyn = (state && state.dynamicScale) ? (DYN_ANCHOR / s) : 1;
+  const viewportEl = document.getElementById('viewport');
+  if (viewportEl) {
+    viewportEl.style.setProperty('--cl-size', (COUNTRY_LABEL_BASE_PX * v * dyn) + 'px');
+  }
+  if (countryLabelScaleDisplay) countryLabelScaleDisplay.textContent = v.toFixed(2) + 'x';
+}
 if (countryLabelScale) {
-  const applyCountryLabelScale = () => {
-    const v = Number(countryLabelScale.value) || 1;
-    const viewportEl = document.getElementById('viewport');
-    if (viewportEl) {
-      viewportEl.style.setProperty('--cl-size', (COUNTRY_LABEL_BASE_PX * v) + 'px');
-    }
-    if (countryLabelScaleDisplay) countryLabelScaleDisplay.textContent = v.toFixed(2) + 'x';
-  };
   countryLabelScale.addEventListener('input', applyCountryLabelScale);
-  applyCountryLabelScale();
+}
+applyCountryLabelScale();
+
+/* Dynamic-scale toggle. Hydrates state.dynamicScale from localStorage
+   on boot, mirrors the checkbox, and triggers applyDynamicScale() so
+   the current frame reflects the setting immediately (without needing
+   a pan/zoom to invalidate). Presenter preference — not exported. */
+const DYNAMIC_SCALE_STORAGE_KEY = 'ttx-dynamic-scale';
+const dynamicScaleEl = document.getElementById('dynamic-scale');
+try {
+  const saved = localStorage.getItem(DYNAMIC_SCALE_STORAGE_KEY);
+  if (saved === '1') state.dynamicScale = true;
+} catch (_) { /* private mode / disabled storage — ignore */ }
+if (dynamicScaleEl) {
+  dynamicScaleEl.checked = !!state.dynamicScale;
+  dynamicScaleEl.addEventListener('change', () => {
+    state.dynamicScale = !!dynamicScaleEl.checked;
+    try { localStorage.setItem(DYNAMIC_SCALE_STORAGE_KEY, state.dynamicScale ? '1' : '0'); } catch (_) {}
+    applyDynamicScale();
+  });
 }
 
 /* =====================================================================
@@ -4118,6 +4534,29 @@ function validateSession(p) {
       errs.push('scenario.highlights: must be an object of ISO→color.');
     if (sc.points != null && !Array.isArray(sc.points))
       errs.push('scenario.points: must be an array.');
+    // basemap: optional per-scenario field for custom-map scenarios.
+    // Only the known shape is accepted; dataUrl is allowed for hand-
+    // authored scenarios but usually absent on import (stripped on
+    // export — applyBasemap will re-prompt the user for the file).
+    if (sc.basemap != null) {
+      if (!isObj(sc.basemap)) {
+        errs.push('scenario.basemap: must be an object when present.');
+      } else {
+        const bm = sc.basemap;
+        if (bm.type !== 'image')
+          errs.push('scenario.basemap.type: only "image" is supported.');
+        if (bm.src != null && typeof bm.src !== 'string')
+          errs.push('scenario.basemap.src: must be a string filename when present.');
+        if (bm.fit != null && bm.fit !== 'contain' && bm.fit !== 'stretch')
+          errs.push('scenario.basemap.fit: must be "contain" or "stretch".');
+        if (bm.width != null && !Number.isFinite(bm.width))
+          errs.push('scenario.basemap.width: must be a number when present.');
+        if (bm.height != null && !Number.isFinite(bm.height))
+          errs.push('scenario.basemap.height: must be a number when present.');
+        if (bm.dataUrl != null && typeof bm.dataUrl !== 'string')
+          errs.push('scenario.basemap.dataUrl: must be a string when present.');
+      }
+    }
   }
 
   if (p.highlights != null && !isObj(p.highlights))
@@ -4137,6 +4576,15 @@ function validateSession(p) {
 }
 
 document.getElementById('btn-export').addEventListener('click', () => {
+  // Deep-clone the scenario and strip the transient basemap dataUrl
+  // before serialising. The exported JSON carries only the filename
+  // (basemap.src) — on import we re-prompt for the actual image file
+  // so the session stays portable between machines without embedding
+  // the image bytes.
+  const scenarioForExport = JSON.parse(JSON.stringify(state.scenario));
+  if (scenarioForExport && scenarioForExport.basemap) {
+    delete scenarioForExport.basemap.dataUrl;
+  }
   const payload = {
     // version goes first so a human opening the file sees the format
     // hint immediately.
@@ -4144,7 +4592,7 @@ document.getElementById('btn-export').addEventListener('click', () => {
     scenarioId: state.scenarioId,
     highlights: state.highlights,
     currentEventIdx: state.currentEventIdx,
-    scenario: state.scenario,
+    scenario: scenarioForExport,
     units:  (window.UNITS_DATA && window.UNITS_DATA.units) || [],
     countryInfo: state.countryInfo || {},
     classificationBanner: state.classificationBanner || 'UNCLASSIFIED',
@@ -4206,6 +4654,11 @@ document.getElementById('file-import').addEventListener('change', (e) => {
     else state.countryInfo = {};
     if (typeof p.classificationBanner === 'string') state.classificationBanner = p.classificationBanner;
     renderClassificationBanner();
+    // Apply basemap before the rest of the render so custom-map imports
+    // hide world chrome up-front. If the imported scenario has a
+    // basemap entry but no dataUrl (the export stripped it), applyBasemap
+    // opens the picker dialog so the user can re-supply the image.
+    applyBasemap(state.scenario);
     repaintHighlights(); renderPins(); renderPois(); renderPoiEditor();
     renderUnits(); renderUnitEditor(); renderSidebar();
     if (state.openCountryIso) renderCountryPanel();
@@ -4344,7 +4797,36 @@ function runSelfTests() {
     }
   } catch (e) { fail('classification banner', 'threw: ' + e.message); }
 
-  // 9. Geopolitics toggle plumbing: all virtual features exist,
+  // 9a. Custom basemap plumbing. The picker DOM, the image slot and
+  //     the three apply/open/close helpers must all be present so a
+  //     scenario with `basemap: { type: 'image' }` actually gets a UI.
+  try {
+    const imgEl = document.getElementById('basemap-image');
+    const pickerEl = document.getElementById('basemap-picker');
+    const fileEl = document.getElementById('bp-file');
+    const missingDom = [];
+    if (!imgEl) missingDom.push('#basemap-image');
+    if (!pickerEl) missingDom.push('#basemap-picker');
+    if (!fileEl) missingDom.push('#bp-file');
+    if (missingDom.length) {
+      fail('custom basemap: DOM', 'missing ' + missingDom.join(', '));
+    } else if (typeof applyBasemap !== 'function' ||
+               typeof openBasemapPicker !== 'function' ||
+               typeof closeBasemapPicker !== 'function' ||
+               typeof isCustomBasemapActive !== 'function') {
+      fail('custom basemap: helpers', 'one of applyBasemap/openBasemapPicker/closeBasemapPicker/isCustomBasemapActive is missing');
+    } else {
+      // Confirm the custom-map scenario seed is wired up.
+      const scs = (window.SCENARIOS_DATA && window.SCENARIOS_DATA.scenarios) || [];
+      const cm = scs.find(s => s.id === 'custom-map');
+      if (!cm) fail('custom basemap: scenario seed', '"custom-map" scenario missing from SCENARIOS_DATA');
+      else if (!cm.basemap || cm.basemap.type !== 'image')
+        fail('custom basemap: scenario seed', '"custom-map" has no basemap.type="image"');
+      else pass('custom basemap plumbing wired');
+    }
+  } catch (e) { fail('custom basemap', 'threw: ' + e.message); }
+
+  // 10. Geopolitics toggle plumbing: all virtual features exist,
   //    GEO_DISPUTES is populated, every dispute has a boolean in
   //    state.disputes, and every NAME_TOGGLES entry has a valid
   //    selection in state.countryNames.
@@ -4477,6 +4959,141 @@ window.addEventListener('resize', () => updateScaleBar());
   // who type a new count then immediately want the result.
   [countEl, sidesEl].forEach(el => {
     el.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); roll(); } });
+  });
+})();
+
+/* ---- Basemap picker wiring ---------------------------------------
+   The picker modal (#basemap-picker) prompts the user to supply an
+   image file to use as the world map for the active scenario. It's
+   opened in two situations:
+     1. A custom-map scenario is loaded with no dataUrl hydrated yet
+        (first load, or import of an exported scenario that only
+        carried the filename). applyBasemap() calls openBasemapPicker.
+     2. The user clicks a "Replace base map…" button (not yet wired
+        — Phase 2) to swap the image on an already-loaded scenario.
+
+   The file input reads the selection into a data URL in memory —
+   we don't write to disk and don't embed the data URL in exports
+   (only the filename is kept), so moving a scenario between machines
+   means re-picking the image file on the new machine.
+
+   File → FileReader → Image probe captures natural dimensions so
+   `basemap.width/height` reflect the source image (useful metadata
+   for an eventual "fit" toggle once the image is already in place). */
+(function wireBasemapPicker() {
+  const fileEl    = document.getElementById('bp-file');
+  const confirmEl = document.getElementById('bp-confirm');
+  const cancelEl  = document.getElementById('bp-cancel');
+  const noteEl    = document.getElementById('bp-note');
+  if (!fileEl || !confirmEl || !cancelEl) return;
+
+  // Pending selection lives outside the form so Confirm can commit it
+  // and Cancel / re-picking can discard it cleanly.
+  let pending = null; // { name, dataUrl, width, height }
+
+  fileEl.addEventListener('change', () => {
+    pending = null;
+    confirmEl.disabled = true;
+    if (noteEl) { noteEl.textContent = ''; noteEl.classList.remove('error'); }
+    const file = fileEl.files && fileEl.files[0];
+    if (!file) return;
+
+    // Guard against non-image mimetypes slipping past the accept
+    // filter (some OSes let the user override it to "All files").
+    if (!/^image\//.test(file.type)) {
+      if (noteEl) {
+        noteEl.textContent = 'Please select an image file.';
+        noteEl.classList.add('error');
+      }
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      // Load into an off-DOM Image so we can read naturalWidth/Height
+      // for the scenario metadata. If decode fails (corrupt file,
+      // unsupported format), bail with an error rather than saving a
+      // broken basemap.
+      const probe = new Image();
+      probe.onload = () => {
+        pending = {
+          name: file.name,
+          dataUrl,
+          width: probe.naturalWidth || 0,
+          height: probe.naturalHeight || 0,
+        };
+        confirmEl.disabled = false;
+        if (noteEl) {
+          noteEl.textContent = file.name + ' · ' + pending.width + '×' + pending.height + 'px';
+          noteEl.classList.remove('error');
+        }
+      };
+      probe.onerror = () => {
+        pending = null;
+        confirmEl.disabled = true;
+        if (noteEl) {
+          noteEl.textContent = 'Could not decode image.';
+          noteEl.classList.add('error');
+        }
+      };
+      probe.src = dataUrl;
+    };
+    reader.onerror = () => {
+      pending = null;
+      confirmEl.disabled = true;
+      if (noteEl) {
+        noteEl.textContent = 'Could not read file.';
+        noteEl.classList.add('error');
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+
+  confirmEl.addEventListener('click', () => {
+    if (!pending || !state.scenario) return;
+    const fitEl = document.querySelector('input[name="bp-fit"]:checked');
+    const fit = (fitEl && fitEl.value) || 'contain';
+    state.scenario.basemap = {
+      type: 'image',
+      src: pending.name,
+      fit,
+      width: pending.width,
+      height: pending.height,
+      // dataUrl is held in memory only — stripped on export. The
+      // file on disk is the source of truth; re-opening the scenario
+      // re-prompts for it.
+      dataUrl: pending.dataUrl,
+    };
+    applyBasemap(state.scenario);
+    // Re-render scenario content. Pins, POIs, units etc. are painted
+    // over the basemap image so their absolute x/y don't change, but
+    // the sidebar thumbnail (if any) and any derived layout needs a
+    // refresh pass.
+    renderPins();
+    renderPois();
+    renderPoiEditor();
+    renderUnits();
+    renderSidebar();
+    // Now that the image is in frame, re-fit the view to it.
+    if (typeof fitView === 'function') fitView();
+    closeBasemapPicker();
+    pending = null;
+  });
+
+  cancelEl.addEventListener('click', () => {
+    pending = null;
+    closeBasemapPicker();
+    // If the picker opened because a custom-map scenario lacks an
+    // image, dropping the user into a blank frame isn't useful —
+    // revert to whatever they had loaded before.
+    const prev = state.previousScenarioId;
+    const bm = state.scenario && state.scenario.basemap;
+    const isUnhydrated = bm && bm.type === 'image' && !bm.dataUrl;
+    if (isUnhydrated && prev && prev !== state.scenarioId) {
+      selScenario.value = prev;
+      loadScenario(prev);
+    }
   });
 })();
 
